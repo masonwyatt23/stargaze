@@ -101,36 +101,63 @@ const sb = createClient(SUPABASE_URL, SERVICE_ROLE, {
 
 /* ------------------------------------------------------------------------ */
 
+/** Deterministic negative github_id per username — gives each system creator
+ *  a unique sentinel below zero, so the unique constraint on github_id holds.
+ *  Real GitHub IDs are always positive, so we never collide. */
+function systemGithubId(handle: string): number {
+  let h = 0;
+  for (let i = 0; i < handle.length; i++) {
+    h = (h * 31 + handle.charCodeAt(i)) | 0;
+  }
+  // Map to a stable negative integer in [-2_000_000_000, -1]
+  const n = Math.abs(h % 2_000_000_000);
+  return -(n + 1);
+}
+
+async function findAuthUserByEmail(email: string): Promise<string | null> {
+  // listUsers paginates; for our small import set, page 1 of 200 is enough.
+  const { data, error } = await sb.auth.admin.listUsers({ page: 1, perPage: 200 });
+  if (error || !data?.users) return null;
+  const found = data.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+  return found?.id ?? null;
+}
+
 async function ensureCreator(
   username: string,
   displayName?: string,
   avatarUrl?: string,
 ): Promise<string> {
   const handle = username.toLowerCase().trim();
+
+  // 1. If a public.users row already exists for this handle, reuse it.
   const { data: existing } = await sb
     .from("users")
     .select("id")
     .eq("github_username", handle)
     .maybeSingle();
+  if (existing?.id) return existing.id;
 
-  if (existing?.id) {
-    return existing.id;
+  // 2. Find or create an auth.users entry.
+  const email = `${handle}@import.stargaze.local`;
+  let authId = await findAuthUserByEmail(email);
+  if (!authId) {
+    const { data: authData, error: authErr } = await sb.auth.admin.createUser({
+      email,
+      email_confirm: true,
+      user_metadata: { imported_creator: true, display_name: displayName ?? handle },
+    });
+    if (authErr || !authData.user) {
+      throw new Error(`auth.admin.createUser failed for ${handle}: ${authErr?.message}`);
+    }
+    authId = authData.user.id;
   }
 
-  // Create a Supabase auth.users entry — required for the FK
-  const { data: authData, error: authErr } = await sb.auth.admin.createUser({
-    email: `${handle}@import.stargaze.local`,
-    email_confirm: true,
-    user_metadata: { imported_creator: true, display_name: displayName ?? handle },
-  });
-  if (authErr || !authData.user) {
-    throw new Error(`auth.admin.createUser failed for ${handle}: ${authErr?.message}`);
-  }
-
+  // 3. Insert public.users with a deterministic negative github_id sentinel.
+  const sentinelId = systemGithubId(handle);
   const { error: insertErr } = await sb.from("users").insert({
-    id: authData.user.id,
+    id: authId,
     github_username: handle,
-    github_id: 0, // sentinel — bypasses rate limits, never collides with real GH
+    github_id: sentinelId,
     display_name: displayName ?? handle,
     avatar_url: avatarUrl ?? null,
     bio: "Imported by Stargaze. Sign in with the matching GitHub account to claim this profile and your projects.",
@@ -138,8 +165,8 @@ async function ensureCreator(
   });
   if (insertErr) throw new Error(`users insert failed for ${handle}: ${insertErr.message}`);
 
-  console.log(`  + created creator @${handle}`);
-  return authData.user.id;
+  console.log(`  + created creator @${handle} (sentinel=${sentinelId})`);
+  return authId;
 }
 
 type GitHubRepo = {

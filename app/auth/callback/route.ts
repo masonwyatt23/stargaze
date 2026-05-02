@@ -18,6 +18,34 @@ import { encryptToken } from "@/lib/crypto/token";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Fetch the authenticated user's GitHub org memberships and return their
+ * lowercased login slugs. Used to seed `users.github_orgs` so the claim
+ * flow can match repos owned by orgs the user belongs to.
+ *
+ * Returns an empty array on any failure — org membership is best-effort
+ * and must never block sign-in. The `read:org` OAuth scope is required
+ * for private org visibility; without it only public memberships come
+ * back, which is acceptable for the claim flow's purposes.
+ */
+async function fetchUserOrgLogins(token: string): Promise<string[]> {
+  try {
+    const res = await fetch("https://api.github.com/user/orgs?per_page=100", {
+      headers: {
+        Accept: "application/vnd.github+json",
+        Authorization: `Bearer ${token}`,
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return [];
+    const orgs = (await res.json()) as Array<{ login: string }>;
+    return orgs.map((o) => o.login.toLowerCase());
+  } catch {
+    return [];
+  }
+}
+
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
@@ -82,6 +110,10 @@ export async function GET(request: NextRequest) {
     return errorRedirect("user_upsert_failed");
   }
 
+  // Best-effort org fetch — refreshed on every sign-in so revoked
+  // memberships drop out and new ones surface without manual re-seed.
+  const githubOrgs = await fetchUserOrgLogins(providerToken);
+
   // Use the service-role client to write the encrypted token. The
   // anon-client's INSERT policy on `users` would also allow this for
   // auth.uid() = id, but the token column is sensitive enough that we
@@ -96,6 +128,7 @@ export async function GET(request: NextRequest) {
       avatar_url: avatarUrl,
       bio,
       github_token_encrypted: encrypted,
+      github_orgs: githubOrgs,
     },
     { onConflict: "id" },
   );

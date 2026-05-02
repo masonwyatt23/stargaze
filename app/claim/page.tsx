@@ -30,7 +30,7 @@ export default async function ClaimPage({ searchParams }: ClaimPageProps) {
 
   const { done } = await searchParams;
 
-  const projects = await findClaimableProjects(user.id, user.github_username);
+  const projects = await findClaimableProjects(user.id, user.github_username, user.github_orgs ?? []);
 
   return (
     <>

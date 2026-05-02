@@ -17,6 +17,7 @@ export interface DBUser {
   avatar_url: string | null;
   bio: string | null;
   github_token_encrypted: string | null;
+  github_orgs: string[];
   auto_star_enabled: boolean;
   created_at: string;
 }

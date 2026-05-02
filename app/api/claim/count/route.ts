@@ -16,7 +16,11 @@ export async function GET() {
     return NextResponse.json({ count: 0, sample: [] }, { status: 401 });
   }
 
-  const projects = await findClaimableProjects(user.id, user.github_username);
+  const projects = await findClaimableProjects(
+    user.id,
+    user.github_username,
+    user.github_orgs ?? [],
+  );
 
   return NextResponse.json(
     {

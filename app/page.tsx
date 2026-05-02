@@ -52,6 +52,9 @@ type LeaderRow = {
 async function getFeatured(): Promise<FeaturedProject[]> {
   try {
     const supabase = await createClient();
+    // Pull a wide window then shuffle in-memory — gives every live project a
+    // fair shot at the hero each time, instead of always showing the 6 newest.
+    // Page is `dynamic = "force-dynamic"` so each request re-shuffles.
     const { data } = await supabase
       .from("projects")
       .select(
@@ -61,9 +64,14 @@ async function getFeatured(): Promise<FeaturedProject[]> {
          media:project_media(url, type, order_index)`,
       )
       .eq("status", "live")
-      .order("created_at", { ascending: false })
-      .limit(6);
-    return (data ?? []) as unknown as FeaturedProject[];
+      .limit(200);
+    const all = (data ?? []) as unknown as FeaturedProject[];
+    // Fisher-Yates shuffle, then take 6
+    for (let i = all.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [all[i], all[j]] = [all[j], all[i]];
+    }
+    return all.slice(0, 6);
   } catch {
     return [];
   }

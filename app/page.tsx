@@ -1,26 +1,28 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  Layers,
-  Sparkles,
-  Star,
-  Trophy,
-} from "lucide-react";
+import { ArrowRight, Layers, Star, Trophy } from "lucide-react";
 import { GithubIcon } from "@/components/icons/github-icon";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Footer } from "@/components/footer";
-import { HeroDemo } from "@/components/landing/hero-demo";
-import { Logo } from "@/components/logo";
 import { Nav } from "@/components/nav";
+import { BuilderWall } from "@/components/landing/builder-wall";
+import { CoordinateMark } from "@/components/landing/coordinate-mark";
+import { HeroDemo } from "@/components/landing/hero-demo";
+import { LeaderboardSpotlight } from "@/components/landing/leaderboard-spotlight";
+import { LiveStats } from "@/components/landing/live-stats";
+import { LiveTicker } from "@/components/landing/live-ticker";
+import { MagazineGrid } from "@/components/landing/magazine-grid";
+import { MakerStrip } from "@/components/landing/maker-strip";
+import { ObservatoryCta } from "@/components/landing/observatory-cta";
+import { SectionFrame } from "@/components/landing/section-frame";
 import { createClient } from "@/lib/supabase/server";
-import { cn, formatCount } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-type FeaturedProjectRow = {
+/* ------------------------------------------------------------------------ */
+/* Data                                                                     */
+/* ------------------------------------------------------------------------ */
+
+type FeaturedProject = {
   id: string;
   slug: string;
   title: string;
@@ -46,7 +48,7 @@ type LeaderRow = {
   right_swipes_week: number;
 };
 
-async function getFeatured(): Promise<FeaturedProjectRow[]> {
+async function getFeatured(): Promise<FeaturedProject[]> {
   try {
     const supabase = await createClient();
     const { data } = await supabase
@@ -60,7 +62,7 @@ async function getFeatured(): Promise<FeaturedProjectRow[]> {
       .eq("status", "live")
       .order("created_at", { ascending: false })
       .limit(6);
-    return (data ?? []) as unknown as FeaturedProjectRow[];
+    return (data ?? []) as unknown as FeaturedProject[];
   } catch {
     return [];
   }
@@ -82,71 +84,142 @@ async function getLeaders(): Promise<LeaderRow[]> {
   }
 }
 
+async function getStats() {
+  try {
+    const supabase = await createClient();
+    const [
+      { count: liveProjects },
+      { count: makers },
+      { count: starsAllTime },
+      { count: starsThisWeek },
+    ] = await Promise.all([
+      supabase
+        .from("projects")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "live"),
+      supabase
+        .from("users")
+        .select("*", { count: "exact", head: true })
+        .neq("github_id", 0),
+      supabase
+        .from("swipes")
+        .select("*", { count: "exact", head: true })
+        .eq("direction", "right"),
+      supabase
+        .from("swipes")
+        .select("*", { count: "exact", head: true })
+        .eq("direction", "right")
+        .gte(
+          "created_at",
+          new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString(),
+        ),
+    ]);
+    return {
+      liveProjects: liveProjects ?? 0,
+      makers: makers ?? 0,
+      starsAllTime: starsAllTime ?? 0,
+      starsThisWeek: starsThisWeek ?? 0,
+    };
+  } catch {
+    return { liveProjects: 0, makers: 0, starsAllTime: 0, starsThisWeek: 0 };
+  }
+}
+
+/* ------------------------------------------------------------------------ */
+/* Page                                                                     */
+/* ------------------------------------------------------------------------ */
+
 export default async function LandingPage() {
-  const [featured, leaders] = await Promise.all([getFeatured(), getLeaders()]);
+  const [featured, leaders, stats] = await Promise.all([
+    getFeatured(),
+    getLeaders(),
+    getStats(),
+  ]);
 
   return (
     <>
       <Nav />
+      <LiveTicker />
       <main className="flex-1">
         <Hero />
-        <HowItWorks />
-        <FeaturedGrid projects={featured} />
-        <LeaderboardPreview leaders={leaders} />
-        <SocialProof />
-        <FinalCta />
+        <Bulletin stats={stats} featured={featured} leaders={leaders} />
       </main>
+      <ObservatoryCta />
       <Footer />
     </>
   );
 }
 
-/* ----------------------------- Hero ------------------------------------- */
+/* ------------------------------------------------------------------------ */
+/* Hero — editorial poster with HeroDemo floating card on the right        */
+/* ------------------------------------------------------------------------ */
 
 function Hero() {
   return (
-    <section className="relative overflow-hidden">
-      <div aria-hidden className="star-trail absolute inset-0 opacity-80" />
+    <section className="relative isolate overflow-hidden">
+      {/* Backgrounds: starfield + radial glow + observatory grid */}
+      <div aria-hidden className="absolute inset-0 starfield opacity-90" />
       <div
         aria-hidden
-        className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(47_96%_58%/0.12),transparent_60%)]"
+        className="absolute inset-0 [background:radial-gradient(ellipse_900px_500px_at_85%_30%,hsl(47_96%_58%/0.14),transparent_70%)]"
       />
       <div
         aria-hidden
-        className="absolute -right-40 top-10 h-[500px] w-[500px] rounded-full bg-[radial-gradient(circle,hsl(47_96%_58%/0.10),transparent_60%)] blur-3xl"
+        className="absolute inset-0 observatory-grid opacity-[0.18] [mask-image:radial-gradient(ellipse_at_50%_30%,black_0%,transparent_70%)]"
       />
-      <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-6 pb-20 pt-16 md:grid-cols-[1.1fr_1fr] md:pt-24 md:pb-28">
-        <div className="text-center md:text-left">
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-            <Sparkles className="h-3.5 w-3.5" />
-            v0.1 — for the vibe-coded era
+
+      <div className="relative mx-auto grid max-w-7xl items-start gap-x-12 gap-y-16 px-6 pt-12 md:pt-16 lg:grid-cols-[1.5fr_1fr] lg:gap-y-0 lg:pt-20">
+        {/* LEFT — typographic poster */}
+        <div className="relative pb-12 lg:pb-32">
+          <div className="flex items-center gap-3">
+            <CoordinateMark label="★" value="Observation Deck 01" />
+            <span className="hidden h-px flex-1 bg-foreground/10 md:block" />
+            <CoordinateMark
+              value="N 38.9° / W 77.0°"
+              className="hidden md:flex"
+            />
           </div>
 
-          <h1 className="mt-6 text-4xl font-bold leading-[1.02] tracking-tight md:text-6xl lg:text-[72px]">
-            Discover indie
-            <br className="hidden md:inline" />{" "}
-            projects{" "}
+          <h1
+            className="
+              mt-10 editorial-display text-foreground
+              text-[clamp(3rem,11vw,8.5rem)]
+              md:text-[clamp(3.5rem,9vw,8rem)]
+              lg:text-[clamp(4rem,8vw,9rem)]
+            "
+          >
+            Discover
+            <br />
+            indie projects
+            <br />
             <span className="relative inline-block">
               <span className="bg-gradient-to-br from-primary via-primary to-amber-300 bg-clip-text text-transparent">
-                worth a star.
+                worth a star
               </span>
+              <span className="text-foreground/85">.</span>
               <Star
-                className="absolute -right-7 -top-3 h-6 w-6 fill-primary text-primary md:-right-10 md:-top-4 md:h-8 md:w-8"
-                strokeWidth={0}
                 aria-hidden
+                className="absolute -right-8 -top-2 h-7 w-7 fill-primary text-primary md:-right-12 md:-top-3 md:h-10 md:w-10"
+                strokeWidth={0}
               />
             </span>
           </h1>
 
-          <p className="mt-6 max-w-xl text-balance text-base leading-relaxed text-muted-foreground md:text-lg">
-            Stargaze is a swipe-deck for builders. Right-swipe to save{" "}
-            <span className="text-foreground">— and auto-star the repo</span>{" "}
-            on GitHub. The leaderboard ranks makers by real stars delivered,
-            not vanity points.
+          <p className="mt-10 max-w-lg text-base leading-relaxed text-muted-foreground md:text-lg">
+            <span className="text-foreground">A swipe-deck for builders.</span>{" "}
+            Right-swipe saves the project — and{" "}
+            <span className="rounded bg-primary/15 px-1.5 py-0.5 font-medium text-primary ring-1 ring-primary/30">
+              auto-stars the repo on GitHub.
+            </span>{" "}
+            The leaderboard ranks makers by real stars delivered.
           </p>
 
-          <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row md:items-start md:justify-start">
-            <Button asChild size="xl" className="gap-2 shadow-lg shadow-primary/20">
+          <div className="mt-10 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+            <Button
+              asChild
+              size="xl"
+              className="gap-2 shadow-[0_0_40px_-10px_hsl(47_96%_58%/0.7)]"
+            >
               <Link href="/sign-in">
                 <GithubIcon className="h-5 w-5" />
                 Continue with GitHub
@@ -156,380 +229,278 @@ function Hero() {
             <Button asChild size="xl" variant="ghost" className="gap-2">
               <Link href="/feed">
                 <Layers className="h-5 w-5" />
-                Peek the feed
+                Peek the deck
               </Link>
             </Button>
           </div>
 
-          <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground md:justify-start">
-            <span className="inline-flex items-center gap-1.5">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              Live · 0 in queue
+          <div className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground/70">
+            <span className="flex items-center gap-1.5">
+              <span className="relative inline-flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+              </span>
+              Live signal
             </span>
-            <span className="hidden sm:inline">
-              Open source · self-serve · no waitlist
+            <Sep />
+            <span>Open-source friendly</span>
+            <Sep />
+            <span>Self-serve · no waitlist</span>
+            <Sep />
+            <span className="text-foreground/80">
+              ← skip <span className="text-primary">·</span> ★ →
             </span>
-            <span className="sm:hidden">No waitlist</span>
           </div>
         </div>
 
-        <div className="relative">
-          <HeroDemo />
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ---------------------- How it works (3 steps) -------------------------- */
-
-function HowItWorks() {
-  const steps = [
-    {
-      icon: <Layers className="h-6 w-6" />,
-      title: "Browse the deck",
-      blurb:
-        "Hand-curated indie projects. Screenshots, demos, and a one-line tagline. No SEO sludge, no infinite scroll.",
-    },
-    {
-      icon: <Star className="h-6 w-6 fill-primary text-primary" />,
-      title: "Swipe right to save",
-      blurb:
-        "Right = save it for later and back the maker. Left = pass. Keyboard works too: → / s to star, ← / x to skip.",
-    },
-    {
-      icon: <Trophy className="h-6 w-6" />,
-      title: "Stars hit GitHub",
-      blurb:
-        "We star the repo on your behalf using the OAuth scope you granted. Toggle off any time in Settings.",
-    },
-  ];
-
-  return (
-    <section className="mx-auto max-w-5xl px-6 py-20">
-      <div className="text-center">
-        <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
-          How it works
-        </h2>
-        <p className="mt-3 text-muted-foreground">
-          Three taps from sign-in to backing your first maker.
-        </p>
-      </div>
-      <div className="mt-12 grid gap-4 md:grid-cols-3">
-        {steps.map((s, i) => (
-          <Card
-            key={s.title}
-            className="relative overflow-hidden border-border/60 bg-card/60 backdrop-blur"
-          >
-            <CardContent className="p-6">
-              <div className="absolute right-4 top-4 font-mono text-xs text-muted-foreground/40">
-                0{i + 1}
+        {/* RIGHT — animated demo deck on a constellation grid plate */}
+        <div className="relative mx-auto w-full max-w-[420px] lg:mx-0 lg:max-w-none">
+          <div className="relative pt-4 lg:pt-12">
+            <div className="relative">
+              <div
+                aria-hidden
+                className="frame-corner absolute -inset-3 rounded-[28px]"
+              />
+              <div className="relative rounded-[24px] border hairline bg-card/40 p-6 backdrop-blur-sm md:p-8 lg:p-10">
+                <div className="absolute inset-x-4 top-3 flex items-center justify-between font-mono text-[9px] uppercase tracking-[0.24em] text-muted-foreground/60">
+                  <span>★ live preview · § 02</span>
+                  <span>3-card stack</span>
+                </div>
+                <div className="pt-6">
+                  <HeroDemo />
+                </div>
               </div>
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 text-primary ring-1 ring-primary/30">
-                {s.icon}
-              </div>
-              <h3 className="mt-4 text-lg font-semibold">{s.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                {s.blurb}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/* ----------------------- Featured projects grid ------------------------- */
-
-function FeaturedGrid({ projects }: { projects: FeaturedProjectRow[] }) {
-  return (
-    <section className="mx-auto max-w-5xl px-6 py-20">
-      <div className="flex items-end justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
-            Fresh off the build
-          </h2>
-          <p className="mt-2 text-muted-foreground">
-            Six newest projects on the deck right now.
-          </p>
-        </div>
-        <Link
-          href="/feed"
-          className="hidden items-center gap-1 text-sm text-primary hover:underline md:inline-flex"
-        >
-          Open the deck <ArrowRight className="h-4 w-4" />
-        </Link>
-      </div>
-
-      {projects.length === 0 ? (
-        <EmptyFeatured />
-      ) : (
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {projects.map((p) => (
-            <FeaturedCard key={p.id} project={p} />
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
-function EmptyFeatured() {
-  return (
-    <Card className="mt-8 border-dashed bg-card/40">
-      <CardContent className="flex flex-col items-center gap-3 p-12 text-center">
-        <Star className="h-8 w-8 fill-primary/50 text-primary" />
-        <p className="text-sm text-muted-foreground">
-          No live projects yet. Be the first —{" "}
-          <Link className="text-primary hover:underline" href="/projects/new">
-            ship something
-          </Link>
-          .
-        </p>
-      </CardContent>
-    </Card>
-  );
-}
-
-function FeaturedCard({ project }: { project: FeaturedProjectRow }) {
-  const cover = [...project.media]
-    .sort((a, b) => a.order_index - b.order_index)
-    .find((m) => m.type !== "video");
-
-  return (
-    <Link
-      href={`/p/${project.slug}`}
-      className="group block focus-visible:outline-none"
-    >
-      <Card className="h-full overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10 group-focus-visible:ring-2 group-focus-visible:ring-primary">
-        <div className="aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-secondary to-muted">
-          {cover ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={cover.url}
-              alt=""
-              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-muted-foreground/40">
-              <Star className="h-10 w-10" />
             </div>
-          )}
+
+            <div className="mt-14 flex items-start gap-4 lg:mt-16">
+              <div
+                aria-hidden
+                className="mt-2 h-px w-10 shrink-0 bg-primary/60"
+              />
+              <p className="font-mono text-[11px] leading-relaxed text-muted-foreground">
+                The deck loops through three real indie projects every six
+                seconds. Hover to pause. The right-swipe burst is the actual
+                production star animation.
+              </p>
+            </div>
+          </div>
         </div>
-        <CardContent className="p-4">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="line-clamp-1 text-base font-semibold">
-              {project.title}
-            </h3>
-            {project.github_stars != null && (
-              <Badge variant="outline" className="shrink-0 gap-1">
-                <Star className="h-3 w-3 fill-primary text-primary" />
-                {formatCount(project.github_stars)}
-              </Badge>
-            )}
-          </div>
-          <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-            {project.tagline}
-          </p>
-          <div className="mt-3 flex items-center gap-2">
-            {project.user ? (
-              <>
-                <Avatar className="h-5 w-5">
-                  {project.user.avatar_url ? (
-                    <AvatarImage
-                      src={project.user.avatar_url}
-                      alt={project.user.github_username}
-                    />
-                  ) : null}
-                  <AvatarFallback>
-                    {project.user.github_username.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-xs text-muted-foreground">
-                  @{project.user.github_username}
-                </span>
-              </>
-            ) : null}
-            {project.github_language ? (
-              <Badge variant="secondary" className="ml-auto">
-                {project.github_language}
-              </Badge>
-            ) : null}
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
+      </div>
+
+      <div className="relative mx-auto mt-12 max-w-7xl px-6 lg:mt-20">
+        <div className="border-t hairline" />
+      </div>
+    </section>
   );
 }
 
-/* ----------------------- Leaderboard preview ---------------------------- */
+function Sep() {
+  return <span className="text-primary/40">/</span>;
+}
 
-function LeaderboardPreview({ leaders }: { leaders: LeaderRow[] }) {
+/* ------------------------------------------------------------------------ */
+/* Bulletin                                                                 */
+/* ------------------------------------------------------------------------ */
+
+function Bulletin({
+  stats,
+  featured,
+  leaders,
+}: {
+  stats: {
+    liveProjects: number;
+    makers: number;
+    starsAllTime: number;
+    starsThisWeek: number;
+  };
+  featured: FeaturedProject[];
+  leaders: LeaderRow[];
+}) {
   return (
-    <section className="mx-auto max-w-5xl px-6 py-20">
-      <div className="grid items-center gap-10 md:grid-cols-2">
-        <div>
-          <Badge variant="warning" className="mb-3">
-            <Trophy className="h-3 w-3" />
-            Live
-          </Badge>
-          <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
+    <div className="mx-auto max-w-7xl px-6">
+      <section className="py-14 md:py-20">
+        <SectionFrame
+          index={2}
+          caption="Live signal · platform readout"
+          meta="updated continuously"
+        />
+        <div className="mt-6">
+          <LiveStats
+            stats={[
+              {
+                label: "live projects",
+                value: stats.liveProjects,
+                hint: "currently on the deck",
+              },
+              {
+                label: "makers shipping",
+                value: stats.makers,
+                hint: "real human accounts",
+              },
+              {
+                label: "stars delivered",
+                value: stats.starsAllTime,
+                hint: "lifetime, all repos",
+                glow: true,
+              },
+              {
+                label: "stars this week",
+                value: stats.starsThisWeek,
+                hint: "rolling 7-day window",
+                glow: true,
+              },
+            ]}
+          />
+        </div>
+      </section>
+
+      <section className="py-14 md:py-20">
+        <SectionFrame
+          index={3}
+          caption="The mechanic · how a swipe becomes a star"
+        />
+        <Mechanic />
+      </section>
+
+      <section className="py-14 md:py-20">
+        <div className="mb-6 flex items-end justify-between gap-6">
+          <SectionFrame
+            index={4}
+            caption="Today on deck · featured projects"
+            className="flex-1"
+          />
+          <Link
+            href="/feed"
+            className="hidden items-center gap-1 font-mono text-[10px] uppercase tracking-[0.22em] text-primary hover:underline md:inline-flex"
+          >
+            Open the deck
+            <ArrowRight className="h-3 w-3" />
+          </Link>
+        </div>
+        <h2 className="mb-10 max-w-3xl editorial-display text-4xl text-foreground md:text-6xl">
+          Six new builds.
+          <br />
+          <span className="text-muted-foreground">All worth a swipe.</span>
+        </h2>
+        <MagazineGrid projects={featured} />
+      </section>
+
+      <section className="py-14 md:py-20">
+        <SectionFrame
+          index={5}
+          caption="This week's constellation · leaderboard"
+          meta="resets monday 00:00 UTC"
+        />
+        <div className="mb-10 mt-4 flex items-baseline gap-4">
+          <h2 className="editorial-display text-4xl text-foreground md:text-6xl">
             Makers earn the spotlight.
           </h2>
-          <p className="mt-3 text-muted-foreground">
-            Every right-swipe lifts a creator. The weekly leaderboard ranks
-            who&apos;s shipping projects that stop the scroll.
-          </p>
-          <div className="mt-6">
-            <Button asChild variant="outline" className="gap-1.5">
-              <Link href="/leaderboard">
-                See the full board
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
+          <Trophy
+            aria-hidden
+            className="hidden h-7 w-7 text-primary md:block"
+          />
         </div>
+        <LeaderboardSpotlight leaders={leaders} />
+      </section>
 
-        <Card className="overflow-hidden border-border/60 bg-card/60 backdrop-blur">
-          <CardContent className="p-2">
-            {leaders.length === 0 ? (
-              <p className="p-6 text-center text-sm text-muted-foreground">
-                The board is wide open. Ship something this week and lead it.
-              </p>
-            ) : (
-              <ol className="divide-y divide-border/60">
-                {leaders.map((l, i) => (
-                  <li
-                    key={l.user_id}
-                    className={cn(
-                      "flex items-center gap-3 px-3 py-2.5",
-                      i === 0 && "bg-primary/5",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "w-6 text-center font-mono text-sm tabular-nums",
-                        i === 0
-                          ? "text-primary"
-                          : "text-muted-foreground/70",
-                      )}
-                    >
-                      #{i + 1}
-                    </span>
-                    <Avatar className="h-8 w-8">
-                      {l.avatar_url ? (
-                        <AvatarImage src={l.avatar_url} alt={l.github_username} />
-                      ) : null}
-                      <AvatarFallback>
-                        {l.github_username.slice(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">
-                        {l.display_name ?? l.github_username}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        @{l.github_username}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1 text-sm font-semibold text-primary">
-                      <Star className="h-4 w-4 fill-primary" />
-                      {formatCount(l.right_swipes_week)}
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </section>
+      <section className="py-14 md:py-20">
+        <SectionFrame
+          index={6}
+          caption="For makers · distribution as a service"
+        />
+        <div className="mt-6">
+          <MakerStrip />
+        </div>
+      </section>
+
+      <section className="py-14 pb-24 md:py-20 md:pb-32">
+        <SectionFrame
+          index={7}
+          caption="From the field · what makers say"
+        />
+        <h2 className="mb-14 mt-4 max-w-3xl editorial-display text-4xl text-foreground md:text-6xl">
+          Stars that{" "}
+          <span className="bg-gradient-to-br from-primary via-primary to-amber-300 bg-clip-text text-transparent">
+            mean something.
+          </span>
+        </h2>
+        <BuilderWall />
+      </section>
+    </div>
   );
 }
 
-/* ----------------------- Social proof ----------------------------------- */
+/* ------------------------------------------------------------------------ */
+/* Mechanic — 3 editorial columns                                          */
+/* ------------------------------------------------------------------------ */
 
-function SocialProof() {
-  const quotes = [
+function Mechanic() {
+  const steps: Array<{
+    n: string;
+    keyword: string;
+    headline: string;
+    body: string;
+    icon: React.ReactNode;
+  }> = [
     {
-      quote:
-        "Finally a place where my weekend hack gets seen by people who actually star repos.",
-      author: "@indie-builder",
+      n: "01",
+      keyword: "Browse",
+      headline: "A deck of indie work, hand-picked.",
+      body:
+        "TikTok-style stack. One card at a time. Hero media auto-plays on top, screenshots cross-fade. Tap to read the full pitch.",
+      icon: <Layers className="h-4 w-4" />,
     },
     {
-      quote:
-        "It's like Tinder for GitHub stars — but the kind your CI pipeline cares about.",
-      author: "@ship-it-friday",
+      n: "02",
+      keyword: "Swipe",
+      headline: "Right saves it. Left moves on.",
+      body:
+        "Drag, click the buttons, or use ← / → / s / x on a keyboard. A burst confirms the action. The card you just swiped never reappears.",
+      icon: (
+        <Star className="h-4 w-4 fill-primary text-primary" strokeWidth={0} />
+      ),
     },
     {
-      quote:
-        "Got 40 stars in an afternoon from a tagline I wrote in five minutes.",
-      author: "@vibe-coder",
+      n: "03",
+      keyword: "Star",
+      headline: "We star the repo on your GitHub.",
+      body:
+        "Open-source projects get a real GitHub star from your account, instantly. Closed-source flips to a one-tap access request to the maker.",
+      icon: <Trophy className="h-4 w-4" />,
     },
   ];
 
   return (
-    <section className="mx-auto max-w-5xl px-6 py-20">
-      <div className="text-center">
-        <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
-          Stars that mean something.
-        </h2>
-        <p className="mt-3 text-muted-foreground">
-          Distribution for the vibe-coded era.
-        </p>
-      </div>
-      <div className="mt-10 grid gap-4 md:grid-cols-3">
-        {quotes.map((q) => (
-          <Card
-            key={q.author}
-            className="border-border/60 bg-card/60 backdrop-blur"
-          >
-            <CardContent className="p-6">
-              <Star className="h-5 w-5 fill-primary text-primary" />
-              <p className="mt-3 text-sm leading-relaxed text-foreground">
-                &ldquo;{q.quote}&rdquo;
-              </p>
-              <p className="mt-3 font-mono text-xs text-muted-foreground">
-                — {q.author}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </section>
-  );
-}
+    <div className="relative mt-4 grid grid-cols-1 gap-12 border-y hairline-strong py-12 md:grid-cols-3 md:gap-0 md:py-16">
+      {steps.map((s, i) => (
+        <div key={s.n} className="relative flex flex-col gap-5 px-0 md:px-8">
+          {i > 0 ? (
+            <span
+              aria-hidden
+              className="absolute -left-px top-2 hidden h-[calc(100%-1rem)] w-px bg-foreground/10 md:block"
+            />
+          ) : null}
 
-/* ------------------------ Final CTA ------------------------------------- */
+          <div className="flex items-baseline justify-between">
+            <span className="stat-numeral text-7xl text-primary md:text-8xl">
+              {s.n}
+            </span>
+            <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground/80">
+              {s.icon}
+              {s.keyword}
+            </span>
+          </div>
 
-function FinalCta() {
-  return (
-    <section className="relative overflow-hidden border-t border-border/60 bg-gradient-to-b from-background to-card/20 px-6 py-20">
-      <div className="star-trail absolute inset-0 opacity-50" aria-hidden />
-      <div className="relative mx-auto max-w-3xl text-center">
-        <Logo size="xl" asPlain className="mx-auto" />
-        <h2 className="mt-6 text-3xl font-bold tracking-tight md:text-4xl">
-          Star projects that stop your scroll.
-        </h2>
-        <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
-          Sign in with GitHub. Swipe a few. Make a maker&apos;s week.
-        </p>
-        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Button asChild size="xl" className="gap-2">
-            <Link href="/sign-in">
-              <GithubIcon className="h-5 w-5" />
-              Continue with GitHub
-            </Link>
-          </Button>
-          <Button asChild size="xl" variant="ghost" className="gap-2">
-            <Link href="/projects/new">
-              Submit your project
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </Button>
+          <h3 className="text-xl font-semibold leading-snug tracking-tight text-foreground md:text-2xl">
+            {s.headline}
+          </h3>
+
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            {s.body}
+          </p>
         </div>
-      </div>
-    </section>
+      ))}
+    </div>
   );
 }
+

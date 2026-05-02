@@ -111,3 +111,117 @@ body {
   -webkit-user-select: none;
   -webkit-touch-callout: none;
 }
+
+/* =====================================================================
+ * Observatory utilities — used on the marketing landing.
+ * The brand has an "observation deck" feel: navy starfield, yellow stars,
+ * editorial mono captions, magazine-grid layouts.
+ * ==================================================================== */
+
+/* Subtle dotted grid — used as a substrate on hero / featured panels. */
+.observatory-grid {
+  background-image:
+    linear-gradient(to right, hsl(var(--border) / 0.35) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(var(--border) / 0.35) 1px, transparent 1px);
+  background-size: 64px 64px;
+  background-position: -1px -1px;
+}
+
+/* Starfield — three layers of small dots at low opacity, irregular spacing. */
+.starfield {
+  background-image:
+    radial-gradient(1.5px 1.5px at 12% 18%, hsl(0 0% 100% / 0.25) 0%, transparent 100%),
+    radial-gradient(1px 1px at 78% 32%, hsl(0 0% 100% / 0.18) 0%, transparent 100%),
+    radial-gradient(1px 1px at 36% 64%, hsl(0 0% 100% / 0.18) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 88% 84%, hsl(47 96% 58% / 0.55) 0%, transparent 100%),
+    radial-gradient(1px 1px at 22% 88%, hsl(0 0% 100% / 0.16) 0%, transparent 100%),
+    radial-gradient(1.2px 1.2px at 64% 12%, hsl(47 96% 58% / 0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 48% 42%, hsl(0 0% 100% / 0.12) 0%, transparent 100%),
+    radial-gradient(1px 1px at 6% 56%, hsl(0 0% 100% / 0.16) 0%, transparent 100%);
+  background-size: 100% 100%;
+}
+
+/* Tighter constellation glow halo — drop on top of any element. */
+.constellation-glow {
+  filter: drop-shadow(0 0 14px hsl(47 96% 58% / 0.45))
+          drop-shadow(0 0 32px hsl(47 96% 58% / 0.18));
+}
+
+/* Tabular numerals for any data-y element. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "ss01" 1;
+}
+
+/* Mono caption — small uppercase tracked label used for editorial frames. */
+.mono-caption {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground) / 0.7);
+}
+
+/* Hero typographic accent — used on the BIG type. */
+.editorial-display {
+  font-family: var(--font-sans);
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 0.92;
+}
+
+/* Marquee animation. Two halves duplicated; transform: translateX(-50%). */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.animate-marquee { animation: marquee 38s linear infinite; }
+.animate-marquee-slow { animation: marquee 90s linear infinite; }
+
+/* Twinkle — slow opacity pulse for stars. */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 1; }
+}
+.animate-twinkle { animation: twinkle 3s ease-in-out infinite; }
+
+/* Drift — slow horizontal nudge for background elements. */
+@keyframes drift {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%      { transform: translate3d(-8px, 4px, 0); }
+}
+.animate-drift { animation: drift 18s ease-in-out infinite; }
+
+/* Hairline rules used as section dividers + on cards. */
+.hairline {
+  border-color: hsl(var(--foreground) / 0.08);
+}
+.hairline-strong {
+  border-color: hsl(var(--foreground) / 0.16);
+}
+
+/* Frame corners — used on cards / panels for the bracketed look. */
+.frame-corner::before,
+.frame-corner::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: 1px solid hsl(var(--primary) / 0.6);
+}
+.frame-corner::before {
+  top: -1px; left: -1px;
+  border-right: 0; border-bottom: 0;
+}
+.frame-corner::after {
+  bottom: -1px; right: -1px;
+  border-left: 0; border-top: 0;
+}
+
+/* Used by the BIG numeric stat display. */
+.stat-numeral {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}

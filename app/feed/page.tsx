@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
 import { Footer } from "@/components/footer";
 import { FilterBar } from "@/components/landing/filter-bar";
+import { parseLanguageParam } from "@/components/landing/language-select";
+import { parseOssParam, type OssState } from "@/components/landing/oss-toggle";
+import { parseSortParam, type SortValue } from "@/components/landing/sort-select";
 import { Nav } from "@/components/nav";
 import { PersonalizationBadge } from "@/components/feed/personalization-badge";
 import { getCurrentUser } from "@/lib/auth/get-user";
@@ -24,15 +27,30 @@ const VALID_CATEGORIES = new Set([
   "other",
 ]);
 
+/** Cap user-supplied search input — keeps the SQL pattern bounded. */
+const MAX_QUERY_LEN = 80;
+
 type FeedPageProps = {
   // Next.js 16: searchParams is async.
-  searchParams: Promise<{ focus?: string; q?: string; cat?: string }>;
+  searchParams: Promise<{
+    focus?: string;
+    q?: string;
+    cat?: string;
+    sort?: string;
+    oss?: string;
+    lang?: string;
+  }>;
 };
 
 /**
  * Auth-gated swipe feed. Server component fetches the next ~20 unswiped
- * live projects ranked by recency × right-swipe density, optionally
- * filtered by `?q=` (title/tagline ilike) and `?cat=` (category).
+ * live projects ranked by recency × right-swipe density (the default
+ * "trending" sort), optionally filtered by:
+ *   - `?q=`    → title/tagline/description ilike, ranked
+ *   - `?cat=`  → exact category
+ *   - `?sort=` → trending | fresh | popular | alpha (default trending)
+ *   - `?oss=`  → true | false (open-source filter)
+ *   - `?lang=` → github_language exact match (case-insensitive)
  */
 export default async function FeedPage({ searchParams }: FeedPageProps) {
   const user = await getCurrentUser();
@@ -40,21 +58,37 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
     redirect("/sign-in?redirect=/feed");
   }
 
-  const { focus, q, cat } = await searchParams;
+  const { focus, q, cat, sort, oss, lang } = await searchParams;
 
-  const trimmedQ = q?.trim() ?? "";
+  const trimmedQ = (q ?? "").trim().slice(0, MAX_QUERY_LEN);
   const activeQuery = trimmedQ.length > 0 ? trimmedQ : null;
   const activeCategory =
     cat && cat !== "all" && VALID_CATEGORIES.has(cat) ? cat : null;
+  const activeSort = parseSortParam(sort);
+  const activeOss = parseOssParam(oss);
+  const activeLanguage = parseLanguageParam(lang);
 
   const profile = await fetchTasteProfile(user.id);
 
-  const projects = await fetchFeedForUser(user.id, focus, {
-    query: activeQuery,
-    category: activeCategory,
-  }, profile);
+  const projects = await fetchFeedForUser(
+    user.id,
+    focus,
+    {
+      query: activeQuery,
+      category: activeCategory,
+      sort: activeSort,
+      oss: activeOss,
+      language: activeLanguage,
+    },
+    profile,
+  );
 
-  const filtersActive = activeQuery !== null || activeCategory !== null;
+  const filtersActive =
+    activeQuery !== null ||
+    activeCategory !== null ||
+    activeOss !== "any" ||
+    activeLanguage !== null ||
+    activeSort !== "trending";
 
   return (
     <>
@@ -64,6 +98,9 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
           <FilterBar
             activeCategory={activeCategory}
             activeQuery={activeQuery}
+            activeSort={activeSort}
+            activeOss={activeOss}
+            activeLanguage={activeLanguage}
           />
 
           {profile.total > 0 && !filtersActive ? (
@@ -97,6 +134,9 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
 type FeedFilters = {
   query: string | null;
   category: string | null;
+  sort: SortValue;
+  oss: OssState;
+  language: string | null;
 };
 
 /** Pulls the user's last 100 right-swipes (joined to project category +
@@ -147,23 +187,50 @@ async function fetchFeedForUser(
     query = query.eq("category", filters.category);
   }
 
+  if (filters.oss === "true") {
+    query = query.eq("is_open_source", true);
+  } else if (filters.oss === "false") {
+    query = query.eq("is_open_source", false);
+  }
+
+  if (filters.language) {
+    // Case-insensitive exact match. ilike with no wildcards behaves like
+    // a case-insensitive `=` and lets us avoid an `eq` mismatch on
+    // mixed-case rows ("typescript" vs "TypeScript").
+    query = query.ilike("github_language", filters.language);
+  }
+
   if (filters.query) {
     // Postgres ILIKE escape — keep `%` and `_` literal in user input so
-    // a stray underscore doesn't act as a wildcard. Supabase passes the
-    // value through PostgREST which treats `,` `(` `)` specially in
-    // .or(), so we encode them too.
+    // a stray underscore doesn't act as a wildcard. PostgREST treats
+    // `,` `(` `)` specially in .or(), so we strip them too.
     const safe = filters.query
       .replace(/[\\%_]/g, (m) => `\\${m}`)
       .replace(/[(),]/g, " ")
       .trim();
     if (safe.length > 0) {
-      query = query.or(`title.ilike.%${safe}%,tagline.ilike.%${safe}%`);
+      // Match against title, tagline, AND description so search digs
+      // beyond the surface fields. Ranking happens in-memory below.
+      query = query.or(
+        `title.ilike.%${safe}%,tagline.ilike.%${safe}%,description_md.ilike.%${safe}%`,
+      );
     }
   }
 
-  const { data: recent } = await query
-    .order("created_at", { ascending: false })
-    .limit(60);
+  // SQL-side ordering. For everything except `alpha`/`popular`/`fresh` we
+  // do recency desc and let the in-memory scorer take over. Bumping the
+  // limit a touch for `alpha`/`popular` because the in-memory scorer won't
+  // re-rank those.
+  if (filters.sort === "alpha") {
+    query = query.order("title", { ascending: true });
+  } else if (filters.sort === "popular") {
+    query = query.order("github_stars", { ascending: false, nullsFirst: false });
+  } else {
+    // `fresh` and `trending` both want recency-first as the prefetch order.
+    query = query.order("created_at", { ascending: false });
+  }
+
+  const { data: recent } = await query.limit(60);
 
   if (!recent || recent.length === 0) return [];
 
@@ -190,42 +257,77 @@ async function fetchFeedForUser(
   }
 
   const now = new Date();
+  const candidates = recent.filter((p) => !swipedSet.has(p.id));
 
-  // v0.2 ranking: scoreProject combines recency, popularity, GitHub
-  // stars, demo-video boost, AND personalization (cold-start safe).
-  const ranked = recent
-    .filter((p) => !swipedSet.has(p.id))
-    .map((p) => {
-      const media = (p.media ?? []) as Array<{ type: string }>;
-      return {
-        project: p,
-        score: scoreProject(
-          {
-            category: p.category as string | null,
-            github_language: p.github_language as string | null,
-            github_stars: p.github_stars as number | null,
-            created_at: p.created_at as string,
-            right_swipes: rightCount.get(p.id) ?? 0,
-            total_swipes: rightCount.get(p.id) ?? 0,
-            has_demo_video: media.some((m) => m.type === "video"),
-          },
-          profile,
-          now,
-        ),
-      };
-    })
-    .sort((a, b) => b.score - a.score);
+  // Apply sort. `trending` reuses the personalized scorer; the others
+  // honour the SQL order we already requested (so we just take the prefix).
+  type Ranked = { project: typeof recent[number]; score: number };
+  let ordered: Ranked[];
+
+  if (filters.sort === "trending") {
+    ordered = candidates
+      .map((p) => {
+        const media = (p.media ?? []) as Array<{ type: string }>;
+        return {
+          project: p,
+          score: scoreProject(
+            {
+              category: p.category as string | null,
+              github_language: p.github_language as string | null,
+              github_stars: p.github_stars as number | null,
+              created_at: p.created_at as string,
+              right_swipes: rightCount.get(p.id) ?? 0,
+              total_swipes: rightCount.get(p.id) ?? 0,
+              has_demo_video: media.some((m) => m.type === "video"),
+            },
+            profile,
+            now,
+          ),
+        };
+      })
+      .sort((a, b) => b.score - a.score);
+  } else {
+    // SQL already ordered the rows correctly — preserve that order.
+    ordered = candidates.map((p, i) => ({ project: p, score: -i }));
+  }
+
+  // When a search is active, re-rank by match-strength (exact title >
+  // title-contains > tagline > description) so the top hit is the most
+  // relevant — not just the most recent. Tied matches keep the inner sort.
+  if (filters.query) {
+    const needle = filters.query.toLowerCase();
+    const matchScore = (p: { title: string; tagline: string; description_md: string | null }) => {
+      const title = (p.title ?? "").toLowerCase();
+      const tagline = (p.tagline ?? "").toLowerCase();
+      const desc = (p.description_md ?? "").toLowerCase();
+      if (title === needle) return 4;
+      if (title.startsWith(needle)) return 3;
+      if (title.includes(needle)) return 2;
+      if (tagline.includes(needle)) return 1;
+      if (desc.includes(needle)) return 0.5;
+      return 0;
+    };
+    ordered = ordered
+      .map((r, i) => ({
+        ...r,
+        // Combine: relevance dominates, then inner score breaks ties.
+        score: matchScore(r.project as { title: string; tagline: string; description_md: string | null }) * 1000
+          + r.score
+          - i * 0.0001,
+      }))
+      .sort((a, b) => b.score - a.score);
+  }
 
   // If a focus id is provided (deep-link from a share page), bring it to
   // the top so it's the first card the user sees.
-  const ordered = focusId
+  const finalOrdered = focusId
     ? [
-        ...ranked.filter((r) => r.project.id === focusId),
-        ...ranked.filter((r) => r.project.id !== focusId),
+        ...ordered.filter((r) => r.project.id === focusId),
+        ...ordered.filter((r) => r.project.id !== focusId),
       ]
-    : ranked;
+    : ordered;
 
-  const top = ordered.slice(0, 20).map((r) => r.project);
+  const top = finalOrdered.slice(0, 20).map((r) => r.project);
 
   return top.map((p) => {
     const media = (p.media ?? []) as FeedProject["media"];

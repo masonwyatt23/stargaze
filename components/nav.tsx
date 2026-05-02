@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { Bell, Layers, Plus, Star, Trophy } from "lucide-react";
 import { GithubIcon } from "@/components/icons/github-icon";
+import { ShuffleButton } from "@/components/landing/shuffle-button";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Logo, LogoMark } from "@/components/logo";
+import { ProfileMenu } from "@/components/profile-menu";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { cn } from "@/lib/utils";
 
@@ -52,8 +54,13 @@ function DesktopNav({ user }: { user: NavUser }) {
                   Submit
                 </Link>
               </Button>
+              <ShuffleButton variant="icon" />
               <NotificationsBell />
-              <ProfileMenu user={user} />
+              <ProfileMenu
+                username={user.github_username}
+                displayName={user.display_name}
+                avatarUrl={user.avatar_url}
+              />
             </>
           ) : (
             <Button asChild size="sm" className="gap-1.5">
@@ -158,26 +165,8 @@ function TabBarLink({
   );
 }
 
-function ProfileMenu({ user }: { user: NonNullable<NavUser> }) {
-  // Lightweight nav — clicking the avatar sends you to your profile;
-  // sign-out lives in /settings.
-  return (
-    <Link
-      href={`/u/${user.github_username}`}
-      className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-      aria-label="Your profile"
-    >
-      <Avatar className="h-8 w-8 ring-1 ring-border">
-        {user.avatar_url ? (
-          <AvatarImage src={user.avatar_url} alt={user.github_username} />
-        ) : null}
-        <AvatarFallback>
-          {user.github_username.slice(0, 2).toUpperCase()}
-        </AvatarFallback>
-      </Avatar>
-    </Link>
-  );
-}
+// ProfileMenu now lives in components/profile-menu.tsx as a client component
+// (the dropdown needs interactivity).
 
 /**
  * Notifications icon link. The dot indicator is intentionally a TODO:

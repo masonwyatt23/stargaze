@@ -108,7 +108,7 @@ export default async function SettingsPage() {
 
 function SignOutRow() {
   return (
-    <form action="/api/auth/sign-out" method="post">
+    <form action="/auth/sign-out" method="post">
       <button
         type="submit"
         className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left text-sm text-destructive transition-colors hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"

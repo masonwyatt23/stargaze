@@ -122,14 +122,22 @@ export function ProjectPerfRow({ project }: Props) {
         />
       </div>
 
-      {/* Insights link */}
-      <Link
-        href={`/p/${project.slug}/insights`}
-        className="inline-flex items-center gap-1 justify-self-end rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-      >
-        Insights
-        <ArrowUpRight className="h-3 w-3" />
-      </Link>
+      {/* Insights + Edit links */}
+      <div className="flex items-center gap-1 justify-self-end">
+        <Link
+          href={`/projects/${project.id}/edit`}
+          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        >
+          Edit
+        </Link>
+        <Link
+          href={`/p/${project.slug}/insights`}
+          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        >
+          Insights
+          <ArrowUpRight className="h-3 w-3" />
+        </Link>
+      </div>
     </div>
   );
 }

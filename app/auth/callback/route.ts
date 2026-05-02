@@ -134,8 +134,18 @@ export async function GET(request: NextRequest) {
   // auth.uid() = id, but the token column is sensitive enough that we
   // prefer the explicit privileged write.
   const admin = createServiceClient();
-  const { error: upsertError } = await admin.from("users").upsert(
-    {
+
+  // INSERT new user OR UPDATE existing — but if the row already exists, we
+  // do NOT overwrite `github_username` (the user may have renamed themselves
+  // on Stargaze; their GitHub handle is just for identity, not display).
+  const { data: existing } = await admin
+    .from("users")
+    .select("id")
+    .eq("id", user.id)
+    .maybeSingle<{ id: string }>();
+
+  if (!existing) {
+    const { error: insertErr } = await admin.from("users").insert({
       id: user.id,
       github_username: githubUsername,
       github_id: githubId,
@@ -144,12 +154,24 @@ export async function GET(request: NextRequest) {
       bio,
       github_token_encrypted: encrypted,
       github_orgs: githubOrgs,
-    },
-    { onConflict: "id" },
-  );
-
-  if (upsertError) {
-    return errorRedirect("user_upsert_failed");
+    });
+    if (insertErr) return errorRedirect("user_upsert_failed");
+  } else {
+    const { error: updateErr } = await admin
+      .from("users")
+      .update({
+        github_id: githubId,
+        // Refresh display surfaces from GitHub
+        display_name: displayName,
+        avatar_url: avatarUrl,
+        bio,
+        // Always re-encrypt + re-store the token (it's the access mechanism)
+        github_token_encrypted: encrypted,
+        github_orgs: githubOrgs,
+        // NOTE: github_username intentionally omitted — preserve user's chosen handle.
+      })
+      .eq("id", user.id);
+    if (updateErr) return errorRedirect("user_upsert_failed");
   }
 
   // Validate the redirect target — only allow same-origin paths.

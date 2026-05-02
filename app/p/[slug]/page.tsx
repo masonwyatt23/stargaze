@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ExternalLink, Sparkles, Star } from "lucide-react";
+import { ExternalLink, Pencil, Sparkles, Star } from "lucide-react";
+import { getCurrentUser } from "@/lib/auth/get-user";
 import { GithubIcon } from "@/components/icons/github-icon";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -86,8 +87,12 @@ export async function generateMetadata({
 
 export default async function ProjectPage({ params }: ProjectPageProps) {
   const { slug } = await params;
-  const project = await fetchProject(slug);
+  const [project, currentUser] = await Promise.all([
+    fetchProject(slug),
+    getCurrentUser(),
+  ]);
   if (!project) notFound();
+  const isOwner = currentUser?.id === project.user_id;
 
   const supabase = await createClient();
 
@@ -202,14 +207,27 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                 <p className="max-w-prose text-base text-muted-foreground md:text-lg">
                   {project.tagline}
                 </p>
-                {/* Subtle deep-link to the immersive launch view. */}
-                <Link
-                  href={`/launches/${project.slug}`}
-                  className="inline-flex w-fit items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground/80 transition-colors hover:text-primary"
-                >
-                  <span aria-hidden>→</span>
-                  <span>Read on /launches/{project.slug}</span>
-                </Link>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                  {/* Subtle deep-link to the immersive launch view. */}
+                  <Link
+                    href={`/launches/${project.slug}`}
+                    className="inline-flex w-fit items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground/80 transition-colors hover:text-primary"
+                  >
+                    <span aria-hidden>→</span>
+                    <span>Read on /launches/{project.slug}</span>
+                  </Link>
+                  {/* Owner-only edit affordance. Rendered server-side after the
+                      ownership check below in the page body. */}
+                  {isOwner ? (
+                    <Link
+                      href={`/projects/${project.id}/edit`}
+                      className="inline-flex w-fit items-center gap-1.5 rounded-md border border-primary/30 bg-primary/10 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.22em] text-primary transition-colors hover:bg-primary/20"
+                    >
+                      <Pencil className="h-3 w-3" />
+                      Edit listing
+                    </Link>
+                  ) : null}
+                </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">

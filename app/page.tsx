@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Layers, Star, Trophy } from "lucide-react";
+import { ArrowRight, Layers, Shuffle, Star, Trophy } from "lucide-react";
 import { GithubIcon } from "@/components/icons/github-icon";
 import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/footer";
@@ -245,6 +245,19 @@ function Hero({
                   <Layers className="h-5 w-5" />
                   Peek the deck
                 </Link>
+              </Button>
+              <Button
+                asChild
+                size="xl"
+                variant="ghost"
+                className="gap-2 text-primary hover:text-primary"
+              >
+                {/* `/api/random` 302s to a random live project. Plain anchor
+                    is fine — the browser follows the redirect end-to-end. */}
+                <a href="/api/random">
+                  <Shuffle className="h-5 w-5" />
+                  Surprise me
+                </a>
               </Button>
             </div>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground/70">

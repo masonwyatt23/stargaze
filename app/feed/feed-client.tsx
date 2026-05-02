@@ -6,6 +6,8 @@ import { Layers, Star } from "lucide-react";
 import { toast } from "sonner";
 import { AccessRequestModal } from "@/components/access-request-modal";
 import { AutoStarExplainer } from "@/components/auto-star-explainer";
+import { FirstFeedWelcome } from "@/components/first-feed-welcome";
+import { ProjectDetailSheet } from "@/components/project-detail-sheet";
 import { Button } from "@/components/ui/button";
 import { SwipeButtons } from "@/components/swipe-buttons";
 import { SwipeDeck } from "@/components/swipe-deck";
@@ -25,6 +27,8 @@ export function FeedClient({ projects, autoStarEnabled }: FeedClientProps) {
   const [remaining, setRemaining] = useState(initial);
   const [pendingAccess, setPendingAccess] = useState<FeedProject | null>(null);
   const [autoStarSwipeSignal, setAutoStarSwipeSignal] = useState(0);
+  const [detailProject, setDetailProject] = useState<FeedProject | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
   const top = remaining[0];
 
   const popTop = useCallback(() => {
@@ -111,9 +115,9 @@ export function FeedClient({ projects, autoStarEnabled }: FeedClientProps) {
         <SwipeDeck
           projects={remaining}
           onSwipe={handleSwipe}
-          onCardTap={() => {
-            // Tap-to-open detail sheet hook — currently no-op; the swipe
-            // deck owns its own detail-sheet state.
+          onCardTap={(project) => {
+            setDetailProject(project);
+            setDetailOpen(true);
           }}
         />
       </div>
@@ -154,6 +158,21 @@ export function FeedClient({ projects, autoStarEnabled }: FeedClientProps) {
         triggeredByFirstSwipe
         swipeSignal={autoStarSwipeSignal}
       />
+
+      <ProjectDetailSheet
+        project={detailProject}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        onSwipe={(direction) => {
+          if (detailProject) {
+            void handleSwipe(detailProject, direction);
+          }
+          setDetailOpen(false);
+        }}
+        onClose={() => setDetailOpen(false)}
+      />
+
+      <FirstFeedWelcome />
     </>
   );
 }

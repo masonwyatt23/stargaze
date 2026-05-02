@@ -1,21 +1,32 @@
 import { redirect } from "next/navigation";
 import { Footer } from "@/components/footer";
+import { FilterBar } from "@/components/landing/filter-bar";
 import { Nav } from "@/components/nav";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { createClient } from "@/lib/supabase/server";
 import type { FeedProject } from "@/lib/types/db";
+import { EmptyFilterState } from "./empty-filter-state";
 import { FeedClient } from "./feed-client";
 
 export const dynamic = "force-dynamic";
 
+const VALID_CATEGORIES = new Set([
+  "ai-tool",
+  "dev-utility",
+  "game",
+  "saas",
+  "other",
+]);
+
 type FeedPageProps = {
   // Next.js 16: searchParams is async.
-  searchParams: Promise<{ focus?: string }>;
+  searchParams: Promise<{ focus?: string; q?: string; cat?: string }>;
 };
 
 /**
  * Auth-gated swipe feed. Server component fetches the next ~20 unswiped
- * live projects ranked by recency × right-swipe density.
+ * live projects ranked by recency × right-swipe density, optionally
+ * filtered by `?q=` (title/tagline ilike) and `?cat=` (category).
  */
 export default async function FeedPage({ searchParams }: FeedPageProps) {
   const user = await getCurrentUser();
@@ -23,18 +34,41 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
     redirect("/sign-in?redirect=/feed");
   }
 
-  const { focus } = await searchParams;
-  const projects = await fetchFeedForUser(user.id, focus);
+  const { focus, q, cat } = await searchParams;
+
+  const trimmedQ = q?.trim() ?? "";
+  const activeQuery = trimmedQ.length > 0 ? trimmedQ : null;
+  const activeCategory =
+    cat && cat !== "all" && VALID_CATEGORIES.has(cat) ? cat : null;
+
+  const projects = await fetchFeedForUser(user.id, focus, {
+    query: activeQuery,
+    category: activeCategory,
+  });
+
+  const filtersActive = activeQuery !== null || activeCategory !== null;
 
   return (
     <>
       <Nav />
       <main className="flex-1">
         <div className="mx-auto flex w-full max-w-2xl flex-col items-stretch px-4 pb-32 pt-6 md:pt-10">
-          <FeedClient
-            projects={projects}
-            autoStarEnabled={user.auto_star_enabled}
+          <FilterBar
+            activeCategory={activeCategory}
+            activeQuery={activeQuery}
           />
+
+          {projects.length === 0 && filtersActive ? (
+            <EmptyFilterState
+              query={activeQuery}
+              category={activeCategory}
+            />
+          ) : (
+            <FeedClient
+              projects={projects}
+              autoStarEnabled={user.auto_star_enabled}
+            />
+          )}
         </div>
       </main>
       <Footer />
@@ -46,14 +80,21 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
 /* Data                                                                     */
 /* ------------------------------------------------------------------------ */
 
+type FeedFilters = {
+  query: string | null;
+  category: string | null;
+};
+
 async function fetchFeedForUser(
   userId: string,
   focusId: string | undefined,
+  filters: FeedFilters,
 ): Promise<FeedProject[]> {
   const supabase = await createClient();
 
-  // Pull a generous window of recent live projects.
-  const { data: recent } = await supabase
+  // Pull a generous window of recent live projects. When filters are
+  // active we still cap the prefetch window — most decks are < 60 cards.
+  let query = supabase
     .from("projects")
     .select(
       `id, slug, user_id, title, tagline, description_md, description_html,
@@ -62,7 +103,27 @@ async function fetchFeedForUser(
        creator:users!projects_user_id_fkey(id, github_username, display_name, avatar_url),
        media:project_media(id, project_id, type, url, thumbnail_url, order_index)`,
     )
-    .eq("status", "live")
+    .eq("status", "live");
+
+  if (filters.category) {
+    query = query.eq("category", filters.category);
+  }
+
+  if (filters.query) {
+    // Postgres ILIKE escape — keep `%` and `_` literal in user input so
+    // a stray underscore doesn't act as a wildcard. Supabase passes the
+    // value through PostgREST which treats `,` `(` `)` specially in
+    // .or(), so we encode them too.
+    const safe = filters.query
+      .replace(/[\\%_]/g, (m) => `\\${m}`)
+      .replace(/[(),]/g, " ")
+      .trim();
+    if (safe.length > 0) {
+      query = query.or(`title.ilike.%${safe}%,tagline.ilike.%${safe}%`);
+    }
+  }
+
+  const { data: recent } = await query
     .order("created_at", { ascending: false })
     .limit(60);
 

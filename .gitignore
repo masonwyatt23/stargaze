@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Override macOS Icon? rule from global gitignore so our components/icons/ folder is tracked.
+!components/icons/
+!components/icons/**

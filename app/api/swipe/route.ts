@@ -75,20 +75,9 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: "project_not_found" }, { status: 404 });
   }
 
-  // ---- Already-swiped guard (unique (user_id, project_id) covers it, but
-  //      we want a clean 409 instead of a generic db error) ----
-  const { data: existingSwipe } = await supabase
-    .from("swipes")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("project_id", projectId)
-    .maybeSingle<{ id: string }>();
-
-  if (existingSwipe) {
-    return NextResponse.json({ error: "already_swiped" }, { status: 409 });
-  }
-
   // ---- Insert the swipe ----
+  // No pre-check SELECT — the unique (user_id, project_id) constraint is the
+  // real fence. Map the duplicate-key violation to a clean 409 here.
   const { data: swipe, error: insertErr } = await supabase
     .from("swipes")
     .insert({
@@ -101,7 +90,11 @@ export async function POST(request: Request): Promise<Response> {
     .single<{ id: string }>();
 
   if (insertErr || !swipe) {
-    // Surface rate-limit (raised by trigger) cleanly.
+    // Postgres unique-violation = 23505 → already swiped on this project.
+    if (insertErr?.code === "23505") {
+      return NextResponse.json({ error: "already_swiped" }, { status: 409 });
+    }
+    // Rate-limit raised by trigger.
     if (insertErr?.message?.includes("rate_limit_exceeded")) {
       return NextResponse.json({ error: "rate_limit_exceeded" }, { status: 429 });
     }

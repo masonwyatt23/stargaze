@@ -305,30 +305,10 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                 />
               </div>
               <article
-                // The description_html is sanitized server-side via the
-                // markdown pipeline before persistence — safe to render.
-                // Tailwind arbitrary descendant utilities give us prose
-                // styling without the @tailwindcss/typography plugin.
-                className={[
-                  "max-w-none text-foreground/90 leading-relaxed",
-                  "[&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mt-10 [&_h1]:mb-4 [&_h1]:tracking-tight",
-                  "[&_h2]:text-xl [&_h2]:font-semibold [&_h2]:mt-8 [&_h2]:mb-3 [&_h2]:tracking-tight",
-                  "[&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mt-6 [&_h3]:mb-2",
-                  "[&_p]:my-4 [&_p]:leading-relaxed [&_p]:text-foreground/85",
-                  "[&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2 [&_a]:decoration-primary/40 hover:[&_a]:decoration-primary",
-                  "[&_code]:bg-secondary [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-[0.85em] [&_code]:font-mono",
-                  "[&_pre]:bg-card [&_pre]:border [&_pre]:border-border/60 [&_pre]:p-4 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_pre]:my-6 [&_pre]:text-sm",
-                  "[&_pre_code]:bg-transparent [&_pre_code]:p-0",
-                  "[&_ul]:list-disc [&_ul]:my-4 [&_ul]:ml-6 [&_ul]:space-y-2",
-                  "[&_ol]:list-decimal [&_ol]:my-4 [&_ol]:ml-6 [&_ol]:space-y-2",
-                  "[&_li]:leading-relaxed [&_li]:text-foreground/85",
-                  "[&_blockquote]:border-l-2 [&_blockquote]:border-primary/60 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:my-6 [&_blockquote]:text-muted-foreground",
-                  "[&_img]:rounded-lg [&_img]:my-6 [&_img]:max-w-full [&_img]:h-auto",
-                  "[&_hr]:my-8 [&_hr]:border-border/40",
-                  "[&_table]:w-full [&_table]:my-6 [&_table]:text-sm",
-                  "[&_th]:text-left [&_th]:font-semibold [&_th]:p-2 [&_th]:border-b [&_th]:border-border",
-                  "[&_td]:p-2 [&_td]:border-b [&_td]:border-border/40",
-                ].join(" ")}
+                // description_html is sanitized server-side by lib/markdown
+                // before persistence — safe to render. Typography lives in
+                // .prose-stargaze (see app/globals.css).
+                className="prose-stargaze prose-lg max-w-none"
                 dangerouslySetInnerHTML={{ __html: project.description_html }}
               />
 

@@ -16,7 +16,7 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { slugify } from "../lib/utils";
 
@@ -134,8 +134,21 @@ async function ensureCurator(): Promise<string> {
 }
 
 function ghSearch(q: string, perPage: number): GitHubRepo[] {
-  const cmd = `gh api -X GET "search/repositories" -f q="${q}" -f sort=stars -f order=desc -f per_page=${perPage}`;
-  const out = execSync(cmd, { encoding: "utf-8", maxBuffer: 50 * 1024 * 1024 });
+  // Array form — no shell, gh receives `q` as a single argv entry, immune to
+  // injection regardless of what's in the query string.
+  const out = execFileSync(
+    "gh",
+    [
+      "api",
+      "-X", "GET",
+      "search/repositories",
+      "-f", `q=${q}`,
+      "-f", "sort=stars",
+      "-f", "order=desc",
+      "-f", `per_page=${perPage}`,
+    ],
+    { encoding: "utf-8", maxBuffer: 50 * 1024 * 1024 },
+  );
   const data = JSON.parse(out);
   return data.items as GitHubRepo[];
 }

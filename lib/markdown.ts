@@ -31,7 +31,10 @@ const ALLOWED_TAGS = [
   "h5",
   "h6",
   "hr",
-  "img",
+  // <img> is intentionally OMITTED. README content can include hot-linked
+  // images that leak each visitor's IP/referrer to arbitrary third-party
+  // hosts (tracking-pixel vector). Re-enable only with a strict src host
+  // allow-list or a proxying solution.
   "li",
   "ol",
   "p",

@@ -14,7 +14,7 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { parseGithubRepo } from "../lib/utils";
 import { renderMarkdown } from "../lib/markdown";
 
@@ -30,12 +30,15 @@ const sb = createClient(SUPABASE_URL, SERVICE_ROLE, {
 });
 
 function ghReadme(owner: string, repo: string): string | null {
+  // Validate owner/repo defensively — only call gh if they match GitHub's
+  // legal slug shape. Belt-and-suspenders alongside execFileSync (no shell).
+  if (!/^[\w.-]+$/.test(owner) || !/^[\w.-]+$/.test(repo)) return null;
   try {
-    const out = execSync(
-      `gh api ${JSON.stringify(`/repos/${owner}/${repo}/readme`)} -H "Accept: application/vnd.github.raw"`,
+    return execFileSync(
+      "gh",
+      ["api", `/repos/${owner}/${repo}/readme`, "-H", "Accept: application/vnd.github.raw"],
       { encoding: "utf-8", maxBuffer: 50 * 1024 * 1024, stdio: ["ignore", "pipe", "ignore"] },
     );
-    return out;
   } catch {
     return null;
   }

@@ -216,29 +216,11 @@ export function ProjectDetailSheet({
             )}
           </div>
 
-          {/* Description — sanitized HTML from lib/markdown.ts. We can't use
-              the prose plugin (not installed), so we hand-roll the typography
-              with arbitrary-property selectors. */}
+          {/* Description — sanitized HTML from lib/markdown.ts. Typography
+              comes from .prose-stargaze (see app/globals.css). */}
           {project.description_html ? (
             <div
-              className={cn(
-                "text-sm leading-relaxed text-foreground/90",
-                "[&_h1]:mt-6 [&_h1]:mb-2 [&_h1]:text-xl [&_h1]:font-semibold",
-                "[&_h2]:mt-5 [&_h2]:mb-2 [&_h2]:text-lg [&_h2]:font-semibold",
-                "[&_h3]:mt-4 [&_h3]:mb-2 [&_h3]:text-base [&_h3]:font-semibold",
-                "[&_p]:my-3",
-                "[&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2",
-                "[&_code]:rounded [&_code]:bg-secondary [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-[0.85em]",
-                "[&_pre]:my-3 [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-secondary [&_pre]:p-3 [&_pre>code]:bg-transparent [&_pre>code]:p-0",
-                "[&_ul]:my-3 [&_ul]:ml-5 [&_ul]:list-disc [&_ul]:space-y-1",
-                "[&_ol]:my-3 [&_ol]:ml-5 [&_ol]:list-decimal [&_ol]:space-y-1",
-                "[&_blockquote]:my-3 [&_blockquote]:border-l-2 [&_blockquote]:border-primary/40 [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:text-muted-foreground",
-                "[&_hr]:my-6 [&_hr]:border-border/60",
-                "[&_img]:my-3 [&_img]:rounded-md",
-                "[&_strong]:font-semibold [&_strong]:text-foreground",
-              )}
-              // description_html is sanitized by lib/markdown.ts before it
-              // ever reaches the client.
+              className="prose-stargaze"
               dangerouslySetInnerHTML={{ __html: project.description_html }}
             />
           ) : (

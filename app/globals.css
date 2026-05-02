@@ -225,3 +225,93 @@ body {
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
 }
+
+/* =====================================================================
+ * .prose-stargaze — typography for sanitized markdown HTML.
+ *
+ * We don't ship @tailwindcss/typography. This single class applies the
+ * brand typography to any markdown block (project READMEs, descriptions
+ * in the detail sheet, etc.) using descendant selectors. Two density
+ * variants:
+ *
+ *   .prose-stargaze              — compact (project-detail-sheet, dense)
+ *   .prose-stargaze.prose-lg     — generous (full README on /p/[slug])
+ *
+ * Always paired with sanitized HTML — never inject raw user input here.
+ * ==================================================================== */
+.prose-stargaze {
+  color: hsl(var(--foreground) / 0.9);
+  font-size: 0.875rem;     /* text-sm */
+  line-height: 1.625;      /* leading-relaxed */
+}
+.prose-stargaze h1 { margin-top: 1.5rem;  margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 600; }
+.prose-stargaze h2 { margin-top: 1.25rem; margin-bottom: 0.5rem; font-size: 1.125rem; font-weight: 600; }
+.prose-stargaze h3 { margin-top: 1rem;    margin-bottom: 0.5rem; font-size: 1rem;     font-weight: 600; }
+.prose-stargaze p  { margin-top: 0.75rem; margin-bottom: 0.75rem; }
+.prose-stargaze a  {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: hsl(var(--primary) / 0.4);
+}
+.prose-stargaze a:hover { text-decoration-color: hsl(var(--primary)); }
+.prose-stargaze code {
+  background: hsl(var(--secondary));
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.85em;
+  font-family: var(--font-mono);
+}
+.prose-stargaze pre {
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  background: hsl(var(--secondary));
+  border-radius: 0.375rem;
+  overflow-x: auto;
+}
+.prose-stargaze pre code { background: transparent; padding: 0; }
+.prose-stargaze ul { margin: 0.75rem 0; margin-left: 1.25rem; list-style: disc; }
+.prose-stargaze ol { margin: 0.75rem 0; margin-left: 1.25rem; list-style: decimal; }
+.prose-stargaze ul > li,
+.prose-stargaze ol > li { margin-top: 0.25rem; }
+.prose-stargaze blockquote {
+  margin: 0.75rem 0;
+  padding-left: 0.75rem;
+  border-left: 2px solid hsl(var(--primary) / 0.4);
+  font-style: italic;
+  color: hsl(var(--muted-foreground));
+}
+.prose-stargaze hr  { margin: 1.5rem 0; border-color: hsl(var(--border) / 0.6); }
+.prose-stargaze img { margin: 0.75rem 0; border-radius: 0.375rem; max-width: 100%; height: auto; }
+.prose-stargaze strong { font-weight: 600; color: hsl(var(--foreground)); }
+
+/* Generous variant — used on the full README on /p/[slug]. */
+.prose-stargaze.prose-lg          { font-size: 1rem; }
+.prose-stargaze.prose-lg h1       { margin-top: 2.5rem; margin-bottom: 1rem;    font-size: 1.5rem; font-weight: 700; letter-spacing: -0.025em; }
+.prose-stargaze.prose-lg h2       { margin-top: 2rem;   margin-bottom: 0.75rem; font-size: 1.25rem; letter-spacing: -0.025em; }
+.prose-stargaze.prose-lg h3       { margin-top: 1.5rem; margin-bottom: 0.5rem;  font-size: 1.125rem; }
+.prose-stargaze.prose-lg p        { margin: 1rem 0; color: hsl(var(--foreground) / 0.85); }
+.prose-stargaze.prose-lg li       { color: hsl(var(--foreground) / 0.85); }
+.prose-stargaze.prose-lg pre      {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border) / 0.6);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+}
+.prose-stargaze.prose-lg blockquote {
+  margin: 1.5rem 0;
+  padding-left: 1rem;
+  border-left-width: 2px;
+  border-left-color: hsl(var(--primary) / 0.6);
+}
+.prose-stargaze.prose-lg img      { margin: 1.5rem 0; border-radius: 0.5rem; }
+.prose-stargaze.prose-lg hr       { margin: 2rem 0; border-color: hsl(var(--border) / 0.4); }
+.prose-stargaze.prose-lg ul,
+.prose-stargaze.prose-lg ol       { margin: 1rem 0; margin-left: 1.5rem; }
+.prose-stargaze.prose-lg ul > li,
+.prose-stargaze.prose-lg ol > li  { margin-top: 0.5rem; }
+.prose-stargaze.prose-lg table    { width: 100%; margin: 1.5rem 0; font-size: 0.875rem; border-collapse: collapse; }
+.prose-stargaze.prose-lg th       { text-align: left; padding: 0.5rem; border-bottom: 1px solid hsl(var(--border)); font-weight: 600; }
+.prose-stargaze.prose-lg td       { padding: 0.5rem; border-bottom: 1px solid hsl(var(--border) / 0.4); }

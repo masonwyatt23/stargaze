@@ -252,7 +252,11 @@ async function fetchAccessRequestNotifications(
 }
 
 async function fetchClaimSuggestion(user: DBUser): Promise<ClaimRow | null> {
-  const projects = await findClaimableProjects(user.id, user.github_username, user.github_orgs ?? []);
+  const projects = await findClaimableProjects(
+    user.id,
+    user.github_username,
+    user.github_orgs,
+  );
   if (projects.length === 0) return null;
   return {
     variant: "claim",

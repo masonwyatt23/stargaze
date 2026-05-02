@@ -64,7 +64,7 @@ export async function claimProjects(
   // to. Lowercased to match `parseGithubRepo` output and our storage.
   const owners = new Set<string>();
   if (user.github_username) owners.add(user.github_username.toLowerCase());
-  for (const org of user.github_orgs ?? []) {
+  for (const org of user.github_orgs) {
     if (org) owners.add(org.toLowerCase());
   }
 
@@ -96,5 +96,9 @@ export async function claimProjects(
     revalidatePath(`/p/${row.slug}`);
   }
 
+  // `count` is null if Supabase didn't surface a count. Treat null as
+  // success-but-unknown (fall back to eligible.length); treat 0 distinctly
+  // (a concurrent claim already moved them).
+  if (count === 0) return { claimed: 0 };
   return { claimed: count ?? eligible.length };
 }

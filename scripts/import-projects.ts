@@ -41,7 +41,7 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -178,10 +178,13 @@ type GitHubRepo = {
 };
 
 function ghApi<T>(path: string): T | null {
+  // Path must start with "/" and contain only API-safe characters; no shell.
+  if (!/^\/[\w./?=&%-]+$/.test(path)) return null;
   try {
-    const out = execSync(`gh api ${JSON.stringify(path)}`, {
+    const out = execFileSync("gh", ["api", path], {
       encoding: "utf-8",
       maxBuffer: 50 * 1024 * 1024,
+      stdio: ["ignore", "pipe", "ignore"],
     });
     return JSON.parse(out) as T;
   } catch {
@@ -190,12 +193,13 @@ function ghApi<T>(path: string): T | null {
 }
 
 function ghReadme(owner: string, repo: string): string | null {
+  if (!/^[\w.-]+$/.test(owner) || !/^[\w.-]+$/.test(repo)) return null;
   try {
-    const out = execSync(
-      `gh api ${JSON.stringify(`/repos/${owner}/${repo}/readme`)} -H "Accept: application/vnd.github.raw"`,
-      { encoding: "utf-8", maxBuffer: 50 * 1024 * 1024 },
+    return execFileSync(
+      "gh",
+      ["api", `/repos/${owner}/${repo}/readme`, "-H", "Accept: application/vnd.github.raw"],
+      { encoding: "utf-8", maxBuffer: 50 * 1024 * 1024, stdio: ["ignore", "pipe", "ignore"] },
     );
-    return out;
   } catch {
     return null;
   }

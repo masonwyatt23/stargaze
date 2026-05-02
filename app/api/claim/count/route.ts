@@ -19,7 +19,7 @@ export async function GET() {
   const projects = await findClaimableProjects(
     user.id,
     user.github_username,
-    user.github_orgs ?? [],
+    user.github_orgs,
   );
 
   return NextResponse.json(

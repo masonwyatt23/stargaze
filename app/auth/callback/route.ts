@@ -29,21 +29,36 @@ export const dynamic = "force-dynamic";
  * back, which is acceptable for the claim flow's purposes.
  */
 async function fetchUserOrgLogins(token: string): Promise<string[]> {
+  // Paginate via the Link header. Cap at 5 pages (500 orgs) — well above any
+  // plausible real account, but safe against pathological responses.
+  const logins: string[] = [];
+  let url: string | null = "https://api.github.com/user/orgs?per_page=100";
+  let page = 0;
+  const MAX_PAGES = 5;
   try {
-    const res = await fetch("https://api.github.com/user/orgs?per_page=100", {
-      headers: {
-        Accept: "application/vnd.github+json",
-        Authorization: `Bearer ${token}`,
-        "X-GitHub-Api-Version": "2022-11-28",
-      },
-      signal: AbortSignal.timeout(5000),
-    });
-    if (!res.ok) return [];
-    const orgs = (await res.json()) as Array<{ login: string }>;
-    return orgs.map((o) => o.login.toLowerCase());
+    while (url && page < MAX_PAGES) {
+      const res: Response = await fetch(url, {
+        headers: {
+          Accept: "application/vnd.github+json",
+          Authorization: `Bearer ${token}`,
+          "X-GitHub-Api-Version": "2022-11-28",
+        },
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!res.ok) break;
+      const orgs = (await res.json()) as Array<{ login: string }>;
+      for (const o of orgs) logins.push(o.login.toLowerCase());
+
+      // RFC 5988 Link header: <next-url>; rel="next"
+      const link: string = res.headers.get("link") ?? "";
+      const next: RegExpMatchArray | null = link.match(/<([^>]+)>;\s*rel="next"/);
+      url = next ? next[1] : null;
+      page++;
+    }
   } catch {
-    return [];
+    /* network/timeout/parse — return whatever we got */
   }
+  return logins;
 }
 
 export async function GET(request: NextRequest) {

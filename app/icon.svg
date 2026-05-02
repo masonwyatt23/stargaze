@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <title>Stargaze</title>
+  <!-- Motion-trail strokes — suggest a swiped card landing on the right -->
+  <path d="M2 16 L9 16" stroke="#FACC15" stroke-width="2" stroke-linecap="round" opacity="0.22"/>
+  <path d="M4 11.5 L10 11.5" stroke="#FACC15" stroke-width="2" stroke-linecap="round" opacity="0.45"/>
+  <path d="M4 20.5 L10 20.5" stroke="#FACC15" stroke-width="2" stroke-linecap="round" opacity="0.45"/>
+  <!-- 5-pointed star — center (20.5, 16), outer R = 10.5 -->
+  <path
+    d="M20.5 5.5 L22.85 12.7 L30.5 12.7 L24.32 17.16 L26.65 24.4 L20.5 19.95 L14.35 24.4 L16.68 17.16 L10.5 12.7 L18.15 12.7 Z"
+    fill="#FACC15"
+  />
+</svg>

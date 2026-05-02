@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Footer } from "@/components/footer";
+import { HeroDemo } from "@/components/landing/hero-demo";
 import { Logo } from "@/components/logo";
 import { Nav } from "@/components/nav";
 import { createClient } from "@/lib/supabase/server";
@@ -105,53 +106,76 @@ export default async function LandingPage() {
 function Hero() {
   return (
     <section className="relative overflow-hidden">
+      <div aria-hidden className="star-trail absolute inset-0 opacity-80" />
       <div
         aria-hidden
-        className="star-trail absolute inset-0 opacity-80"
+        className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(47_96%_58%/0.12),transparent_60%)]"
       />
       <div
         aria-hidden
-        className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(47_96%_58%/0.10),transparent_60%)]"
+        className="absolute -right-40 top-10 h-[500px] w-[500px] rounded-full bg-[radial-gradient(circle,hsl(47_96%_58%/0.10),transparent_60%)] blur-3xl"
       />
-      <div className="relative mx-auto max-w-5xl px-6 pb-20 pt-20 text-center md:pt-28">
-        <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-          <Sparkles className="h-3.5 w-3.5" />
-          v0.1 — for the vibe-coded era
+      <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-6 pb-20 pt-16 md:grid-cols-[1.1fr_1fr] md:pt-24 md:pb-28">
+        <div className="text-center md:text-left">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+            <Sparkles className="h-3.5 w-3.5" />
+            v0.1 — for the vibe-coded era
+          </div>
+
+          <h1 className="mt-6 text-4xl font-bold leading-[1.02] tracking-tight md:text-6xl lg:text-[72px]">
+            Discover indie
+            <br className="hidden md:inline" />{" "}
+            projects{" "}
+            <span className="relative inline-block">
+              <span className="bg-gradient-to-br from-primary via-primary to-amber-300 bg-clip-text text-transparent">
+                worth a star.
+              </span>
+              <Star
+                className="absolute -right-7 -top-3 h-6 w-6 fill-primary text-primary md:-right-10 md:-top-4 md:h-8 md:w-8"
+                strokeWidth={0}
+                aria-hidden
+              />
+            </span>
+          </h1>
+
+          <p className="mt-6 max-w-xl text-balance text-base leading-relaxed text-muted-foreground md:text-lg">
+            Stargaze is a swipe-deck for builders. Right-swipe to save{" "}
+            <span className="text-foreground">— and auto-star the repo</span>{" "}
+            on GitHub. The leaderboard ranks makers by real stars delivered,
+            not vanity points.
+          </p>
+
+          <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row md:items-start md:justify-start">
+            <Button asChild size="xl" className="gap-2 shadow-lg shadow-primary/20">
+              <Link href="/sign-in">
+                <GithubIcon className="h-5 w-5" />
+                Continue with GitHub
+                <ArrowRight className="ml-1 h-4 w-4" />
+              </Link>
+            </Button>
+            <Button asChild size="xl" variant="ghost" className="gap-2">
+              <Link href="/feed">
+                <Layers className="h-5 w-5" />
+                Peek the feed
+              </Link>
+            </Button>
+          </div>
+
+          <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground md:justify-start">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              Live · 0 in queue
+            </span>
+            <span className="hidden sm:inline">
+              Open source · self-serve · no waitlist
+            </span>
+            <span className="sm:hidden">No waitlist</span>
+          </div>
         </div>
 
-        <h1 className="mt-6 text-4xl font-bold leading-[1.05] tracking-tight md:text-6xl">
-          Discover indie projects
-          <br />
-          <span className="bg-gradient-to-br from-primary via-primary to-amber-300 bg-clip-text text-transparent">
-            worth a star.
-          </span>
-        </h1>
-
-        <p className="mx-auto mt-6 max-w-2xl text-balance text-base text-muted-foreground md:text-lg">
-          Stargaze is a swipe-deck for builders. Right-swipe to save — and
-          auto-star the repo on GitHub. The leaderboard ranks makers by the
-          stars they earn.
-        </p>
-
-        <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Button asChild size="xl" className="gap-2">
-            <Link href="/sign-in">
-              <GithubIcon className="h-5 w-5" />
-              Continue with GitHub
-              <ArrowRight className="ml-1 h-4 w-4" />
-            </Link>
-          </Button>
-          <Button asChild size="xl" variant="ghost" className="gap-2">
-            <Link href="/feed">
-              <Layers className="h-5 w-5" />
-              Peek the feed
-            </Link>
-          </Button>
+        <div className="relative">
+          <HeroDemo />
         </div>
-
-        <p className="mt-5 text-xs text-muted-foreground">
-          ← skip ✕ &nbsp;·&nbsp; star → 🌟 &nbsp;·&nbsp; that&apos;s it
-        </p>
       </div>
     </section>
   );

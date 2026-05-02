@@ -1,5 +1,5 @@
-import { Star } from "lucide-react";
 import Link from "next/link";
+import { LogomarkSVG } from "@/components/icons/logomark";
 import { cn } from "@/lib/utils";
 
 type LogoProps = {
@@ -11,14 +11,14 @@ type LogoProps = {
 };
 
 const SIZES = {
-  sm: { star: "h-4 w-4", text: "text-base" },
-  md: { star: "h-5 w-5", text: "text-lg" },
-  lg: { star: "h-7 w-7", text: "text-2xl" },
-  xl: { star: "h-9 w-9", text: "text-4xl" },
+  sm: { mark: "size-4", text: "text-base" },
+  md: { mark: "size-5", text: "text-lg" },
+  lg: { mark: "size-7", text: "text-2xl" },
+  xl: { mark: "size-10", text: "text-4xl" },
 } as const;
 
 /**
- * The full Stargaze wordmark: yellow star + "Stargaze" text.
+ * Full Stargaze wordmark: custom logomark + "Stargaze" text.
  */
 export function Logo({ className, asPlain, size = "md" }: LogoProps) {
   const dims = SIZES[size];
@@ -26,16 +26,12 @@ export function Logo({ className, asPlain, size = "md" }: LogoProps) {
   const inner = (
     <span
       className={cn(
-        "inline-flex items-center gap-2 font-bold tracking-tight text-foreground",
+        "inline-flex items-center gap-2 font-bold tracking-tight",
         dims.text,
         className,
       )}
     >
-      <Star
-        className={cn("text-primary fill-primary", dims.star)}
-        strokeWidth={1.25}
-        aria-hidden
-      />
+      <LogomarkSVG className={cn("text-primary", dims.mark)} />
       <span>Stargaze</span>
     </span>
   );
@@ -54,7 +50,8 @@ export function Logo({ className, asPlain, size = "md" }: LogoProps) {
 }
 
 /**
- * Just the star mark — for tight spaces like favicon-y nav corners.
+ * Just the logomark — for tight spaces (mobile bottom nav, social
+ * card corners, loading states).
  */
 export function LogoMark({
   className,
@@ -64,11 +61,5 @@ export function LogoMark({
   size?: "sm" | "md" | "lg" | "xl";
 }) {
   const dims = SIZES[size];
-  return (
-    <Star
-      className={cn("text-primary fill-primary", dims.star, className)}
-      strokeWidth={1.25}
-      aria-hidden
-    />
-  );
+  return <LogomarkSVG className={cn("text-primary", dims.mark, className)} />;
 }

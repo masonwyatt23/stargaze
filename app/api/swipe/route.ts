@@ -15,6 +15,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { decryptToken } from "@/lib/crypto/token";
+import { log } from "@/lib/log";
 import { parseGithubRepo } from "@/lib/utils";
 import {
   GitHubAuthError,
@@ -140,26 +141,52 @@ export async function POST(request: Request): Promise<Response> {
           .eq("id", swipe.id);
 
         if (updateErr) {
-          console.error("[swipe] failed to mark swipe as starred", updateErr);
+          log({
+            level: "error",
+            event: "swipe.mark_starred.failed",
+            swipeId: swipe.id,
+            userId: user.id,
+            projectId,
+            error: updateErr.message,
+          });
         }
       } catch (err) {
         if (err instanceof GitHubAuthError) {
           // Token is dead — clear it so the user is forced to re-auth.
-          console.warn("[swipe] github token rejected, clearing for user", user.id);
+          log({
+            level: "warn",
+            event: "swipe.github.token_rejected",
+            userId: user.id,
+            projectId,
+          });
           const { error: clearErr } = await supabase
             .from("users")
             .update({ github_token_encrypted: null })
             .eq("id", user.id);
           if (clearErr) {
-            console.error("[swipe] failed to clear stale token", clearErr);
+            log({
+              level: "error",
+              event: "swipe.github.clear_token.failed",
+              userId: user.id,
+              error: clearErr.message,
+            });
           }
         } else if (err instanceof GitHubRateLimitError) {
-          console.warn(
-            "[swipe] github rate-limited; star will need manual retry",
-            { userId: user.id, resetAt: err.resetAt },
-          );
+          log({
+            level: "warn",
+            event: "swipe.github.rate_limited",
+            userId: user.id,
+            projectId,
+            resetAt: err.resetAt?.toISOString() ?? null,
+          });
         } else {
-          console.error("[swipe] github star failed (best-effort)", err);
+          log({
+            level: "error",
+            event: "swipe.github.star.failed",
+            userId: user.id,
+            projectId,
+            error: err instanceof Error ? err.message : String(err),
+          });
         }
         // githubStarred stays false; swipe response still succeeds.
       }

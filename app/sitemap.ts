@@ -30,6 +30,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     },
     {
+      url: `${origin}/launches`,
+      lastModified: now,
+      changeFrequency: "hourly",
+      priority: 0.85,
+    },
+    {
       url: `${origin}/leaderboard`,
       lastModified: now,
       changeFrequency: "daily",
@@ -46,6 +52,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Pull live projects + their creator handle in one round-trip.
   // We tolerate a Supabase miss gracefully — sitemaps must never 500.
   let projectEntries: MetadataRoute.Sitemap = [];
+  let launchEntries: MetadataRoute.Sitemap = [];
   let creatorEntries: MetadataRoute.Sitemap = [];
 
   try {
@@ -78,6 +85,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
+    // Each live project also gets a /launches/[slug] deep-link entry — this
+    // surface is the "launch detail" view rendered by the sibling launches
+    // route. Same lastModified as the project, slightly lower priority since
+    // /p/[slug] is the canonical detail page.
+    launchEntries = projects.map((p) => ({
+      url: `${origin}/launches/${p.slug}`,
+      lastModified: new Date(p.updated_at),
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+    }));
+
     // Dedupe creators since one creator can have many projects. Keep the
     // earliest created_at as the lastModified hint (creator metadata changes
     // rarely; profile freshness comes from their projects).
@@ -103,5 +121,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Swallow — at minimum we'll still ship the static entries.
   }
 
-  return [...staticEntries, ...projectEntries, ...creatorEntries];
+  return [
+    ...staticEntries,
+    ...projectEntries,
+    ...launchEntries,
+    ...creatorEntries,
+  ];
 }

@@ -202,6 +202,14 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                 <p className="max-w-prose text-base text-muted-foreground md:text-lg">
                   {project.tagline}
                 </p>
+                {/* Subtle deep-link to the immersive launch view. */}
+                <Link
+                  href={`/launches/${project.slug}`}
+                  className="inline-flex w-fit items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground/80 transition-colors hover:text-primary"
+                >
+                  <span aria-hidden>→</span>
+                  <span>Read on /launches/{project.slug}</span>
+                </Link>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
@@ -273,21 +281,91 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           </div>
         </section>
 
-        <div className="mx-auto w-full max-w-3xl px-4 pb-16 pt-10 md:pt-14">
-          {/* ===================== Description body ===================== */}
-          {project.description_html ? (
-            <article
-              className="prose prose-invert max-w-none prose-headings:tracking-tight prose-a:text-primary prose-code:rounded prose-code:bg-muted prose-code:px-1 prose-pre:bg-card"
-              // The description_html is sanitized server-side via the
-              // markdown agent's pipeline before write.
-              dangerouslySetInnerHTML={{ __html: project.description_html }}
-            />
-          ) : project.description_md ? (
+        {/* ===================== Description body =====================
+            The README lives here. Renders only when there's actual rich
+            content — for description_md fallback we still show the
+            mono pre block, but the wrapper is hidden when both are
+            null/empty so the page doesn't ship an empty section. */}
+        {project.description_html ? (
+          <section
+            aria-labelledby="readme-heading"
+            className="border-t border-border/40"
+          >
+            <div className="mx-auto w-full max-w-3xl px-4 pb-16 pt-12 md:pt-16">
+              <div className="mb-8 flex items-center gap-3">
+                <p
+                  id="readme-heading"
+                  className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground/80"
+                >
+                  From the README
+                </p>
+                <span
+                  aria-hidden
+                  className="h-px flex-1 bg-border/40"
+                />
+              </div>
+              <article
+                // The description_html is sanitized server-side via the
+                // markdown pipeline before persistence — safe to render.
+                // Tailwind arbitrary descendant utilities give us prose
+                // styling without the @tailwindcss/typography plugin.
+                className={[
+                  "max-w-none text-foreground/90 leading-relaxed",
+                  "[&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mt-10 [&_h1]:mb-4 [&_h1]:tracking-tight",
+                  "[&_h2]:text-xl [&_h2]:font-semibold [&_h2]:mt-8 [&_h2]:mb-3 [&_h2]:tracking-tight",
+                  "[&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mt-6 [&_h3]:mb-2",
+                  "[&_p]:my-4 [&_p]:leading-relaxed [&_p]:text-foreground/85",
+                  "[&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2 [&_a]:decoration-primary/40 hover:[&_a]:decoration-primary",
+                  "[&_code]:bg-secondary [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-[0.85em] [&_code]:font-mono",
+                  "[&_pre]:bg-card [&_pre]:border [&_pre]:border-border/60 [&_pre]:p-4 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_pre]:my-6 [&_pre]:text-sm",
+                  "[&_pre_code]:bg-transparent [&_pre_code]:p-0",
+                  "[&_ul]:list-disc [&_ul]:my-4 [&_ul]:ml-6 [&_ul]:space-y-2",
+                  "[&_ol]:list-decimal [&_ol]:my-4 [&_ol]:ml-6 [&_ol]:space-y-2",
+                  "[&_li]:leading-relaxed [&_li]:text-foreground/85",
+                  "[&_blockquote]:border-l-2 [&_blockquote]:border-primary/60 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:my-6 [&_blockquote]:text-muted-foreground",
+                  "[&_img]:rounded-lg [&_img]:my-6 [&_img]:max-w-full [&_img]:h-auto",
+                  "[&_hr]:my-8 [&_hr]:border-border/40",
+                  "[&_table]:w-full [&_table]:my-6 [&_table]:text-sm",
+                  "[&_th]:text-left [&_th]:font-semibold [&_th]:p-2 [&_th]:border-b [&_th]:border-border",
+                  "[&_td]:p-2 [&_td]:border-b [&_td]:border-border/40",
+                ].join(" ")}
+                dangerouslySetInnerHTML={{ __html: project.description_html }}
+              />
+
+              {/* Tail CTA — keeps readers from bottoming out cold. */}
+              <div className="mt-14 flex justify-center">
+                <Card className="w-full max-w-md border-primary/30 bg-card/70 text-center shadow-lg shadow-primary/5 backdrop-blur-sm">
+                  <CardContent className="flex flex-col items-center gap-3 p-6">
+                    <Star
+                      className="h-6 w-6 fill-current text-primary"
+                      strokeWidth={0}
+                      aria-hidden
+                    />
+                    <h3 className="text-lg font-semibold tracking-tight">
+                      Like what you see?
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Star this on Stargaze — auto-stars on GitHub when you
+                      swipe right.
+                    </p>
+                    <Button asChild size="lg" className="mt-1 gap-2">
+                      <Link href={`/feed?focus=${project.id}`}>
+                        <Sparkles className="h-4 w-4" />
+                        Star this on Stargaze
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </section>
+        ) : project.description_md ? (
+          <div className="mx-auto w-full max-w-3xl px-4 pb-16 pt-10 md:pt-14">
             <pre className="whitespace-pre-wrap rounded-md border border-border bg-card/40 p-4 font-mono text-xs">
               {project.description_md}
             </pre>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
 
         {/* ===================== More from this maker ===================== */}
         {makerProjects.length > 0 ? (

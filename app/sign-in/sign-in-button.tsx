@@ -58,7 +58,7 @@ export function SignInButton({ redirectTo }: SignInButtonProps) {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "github",
         options: {
-          scopes: "public_repo read:user user:email",
+          scopes: "public_repo read:user user:email read:org",
           redirectTo: callback.toString(),
         },
       });

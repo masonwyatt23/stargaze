@@ -10,6 +10,7 @@ import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { createClient } from "@/lib/supabase/server";
 import { decryptToken } from "@/lib/crypto/token";
+import { log } from "@/lib/log";
 import {
   GitHubAuthError,
   GitHubError,
@@ -78,7 +79,14 @@ export async function POST(request: Request): Promise<Response> {
         { status: err.status >= 400 && err.status < 600 ? err.status : 502 },
       );
     }
-    console.error("[github/unstar] unexpected error", err);
+    log({
+      level: "error",
+      event: "github.unstar.failed",
+      userId: user.id,
+      owner,
+      repo,
+      error: err instanceof Error ? err.message : String(err),
+    });
     return NextResponse.json({ error: "internal_error" }, { status: 500 });
   }
 }

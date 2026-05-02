@@ -13,6 +13,7 @@ import { z } from "zod";
 
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/get-user";
+import { log } from "@/lib/log";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -167,21 +168,23 @@ export async function POST(request: Request): Promise<Response> {
   `.trim();
 
   if (!apiKey) {
-    console.info(
-      "[access-request] RESEND_API_KEY unset; would send email",
-      {
-        to: creatorEmail ?? `<no-creator-email user=${creator?.github_username ?? project.user_id}>`,
-        from: fromAddr,
-        subject,
-        replyTo: email,
-        message: safeMessage || null,
-      },
-    );
+    log({
+      level: "info",
+      event: "access_request.email.skipped_no_api_key",
+      projectId,
+      to: creatorEmail ?? `<no-creator-email user=${creator?.github_username ?? project.user_id}>`,
+      from: fromAddr,
+      subject,
+      replyTo: email,
+      hasMessage: safeMessage.length > 0,
+    });
   } else if (!creatorEmail) {
-    console.warn(
-      "[access-request] no creator email on file; access_request row inserted but no notification sent",
-      { projectId, creatorUserId: project.user_id },
-    );
+    log({
+      level: "warn",
+      event: "access_request.email.no_creator_email",
+      projectId,
+      creatorUserId: project.user_id,
+    });
   } else {
     try {
       const resendController = new AbortController();
@@ -204,10 +207,21 @@ export async function POST(request: Request): Promise<Response> {
       clearTimeout(resendTimer);
       if (!r.ok) {
         const errText = await r.text().catch(() => r.statusText);
-        console.error("[access-request] resend non-2xx", r.status, errText);
+        log({
+          level: "error",
+          event: "access_request.email.resend_non_2xx",
+          projectId,
+          status: r.status,
+          body: errText,
+        });
       }
     } catch (err) {
-      console.error("[access-request] resend send failed", err);
+      log({
+        level: "error",
+        event: "access_request.email.resend_failed",
+        projectId,
+        error: err instanceof Error ? err.message : String(err),
+      });
       // Still return 200 — the row is what matters; email is best-effort.
     }
   }

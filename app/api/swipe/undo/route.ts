@@ -15,6 +15,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { decryptToken } from "@/lib/crypto/token";
+import { log } from "@/lib/log";
 import { parseGithubRepo } from "@/lib/utils";
 import {
   GitHubAuthError,
@@ -101,15 +102,32 @@ export async function POST(request: Request): Promise<Response> {
         githubUnstarred = true;
       } catch (err) {
         if (err instanceof GitHubAuthError) {
-          console.warn("[swipe/undo] github token rejected; clearing", user.id);
+          log({
+            level: "warn",
+            event: "swipe.undo.github.token_rejected",
+            userId: user.id,
+            projectId,
+          });
           await supabase
             .from("users")
             .update({ github_token_encrypted: null })
             .eq("id", user.id);
         } else if (err instanceof GitHubRateLimitError) {
-          console.warn("[swipe/undo] github rate-limited; un-star skipped");
+          log({
+            level: "warn",
+            event: "swipe.undo.github.rate_limited",
+            userId: user.id,
+            projectId,
+            resetAt: err.resetAt?.toISOString() ?? null,
+          });
         } else {
-          console.error("[swipe/undo] github unstar failed (best-effort)", err);
+          log({
+            level: "error",
+            event: "swipe.undo.github.unstar.failed",
+            userId: user.id,
+            projectId,
+            error: err instanceof Error ? err.message : String(err),
+          });
         }
       }
     }

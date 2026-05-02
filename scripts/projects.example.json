@@ -1,0 +1,31 @@
+{
+  "default_creator_github_username": "masonwyatt23",
+  "default_creator_display_name": "Mason Wyatt",
+  "default_creator_avatar_url": "https://avatars.githubusercontent.com/u/REPLACE-ID",
+
+  "projects": [
+    {
+      "title": "Example tool",
+      "tagline": "A one-line pitch under 100 characters.",
+      "github_repo_url": "https://github.com/your-org/your-repo",
+      "is_open_source": true,
+      "category": "ai-tool",
+      "cta_url": "https://example.com",
+      "screenshots": [
+        "https://example.com/screenshots/01.png",
+        "https://example.com/screenshots/02.png"
+      ],
+      "demo_video_url": "https://www.youtube.com/embed/dQw4w9WgXcQ"
+    },
+
+    {
+      "title": "Closed-source SaaS example",
+      "tagline": "Try the live demo to see why it ships in 30 seconds.",
+      "is_open_source": false,
+      "category": "saas",
+      "cta_url": "https://saas.example.com",
+      "screenshots": ["https://example.com/screenshots/saas-01.png"],
+      "description_md": "## Why we built this\n\nLong-form pitch in **markdown**. Lists, code blocks, links — all sanitized server-side."
+    }
+  ]
+}

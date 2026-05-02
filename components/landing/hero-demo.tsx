@@ -14,7 +14,10 @@ type Sample = {
   isOpenSource: boolean;
   username: string;
   gradient: string;
-  emoji: string;
+  /** Single capital letter shown as the card centerpiece. */
+  monogram: string;
+  /** Optional secondary glyph drawn next to the monogram (typographic only). */
+  mark: string;
 };
 
 const SAMPLES: Sample[] = [
@@ -25,8 +28,9 @@ const SAMPLES: Sample[] = [
     stars: 1280,
     isOpenSource: true,
     username: "lena.codes",
-    gradient: "from-violet-500/30 via-fuchsia-500/20 to-amber-400/30",
-    emoji: "✍️",
+    gradient: "from-violet-500/40 via-fuchsia-500/25 to-amber-400/30",
+    monogram: "I",
+    mark: "//",
   },
   {
     title: "Drift",
@@ -35,8 +39,9 @@ const SAMPLES: Sample[] = [
     stars: 4290,
     isOpenSource: true,
     username: "hex.builder",
-    gradient: "from-sky-500/30 via-cyan-500/20 to-emerald-400/30",
-    emoji: "🌊",
+    gradient: "from-sky-500/40 via-cyan-500/25 to-emerald-400/30",
+    monogram: "D",
+    mark: "~~",
   },
   {
     title: "Rooftop AI",
@@ -45,8 +50,9 @@ const SAMPLES: Sample[] = [
     stars: 815,
     isOpenSource: true,
     username: "agentic.dev",
-    gradient: "from-amber-500/30 via-orange-500/20 to-pink-500/30",
-    emoji: "🏢",
+    gradient: "from-amber-500/40 via-orange-500/25 to-pink-500/30",
+    monogram: "R",
+    mark: "++",
   },
 ];
 
@@ -217,7 +223,25 @@ function DeckCard({
             fill={`url(#stripe-${sample.title})`}
           />
         </svg>
-        <div className="text-7xl drop-shadow-md">{sample.emoji}</div>
+        {/* Editorial monogram instead of emoji — heavy first letter,
+            tightly tracked, with a tiny mono glyph alongside it. */}
+        <div className="relative flex items-baseline gap-2 text-white drop-shadow-2xl">
+          <span className="font-black leading-none tracking-[-0.07em] text-[7rem]">
+            {sample.monogram}
+          </span>
+          <span className="font-mono text-xs tracking-widest text-white/60">
+            {sample.mark}
+          </span>
+        </div>
+        {/* Decorative satellite dots */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute right-6 bottom-6 h-3 w-3 rounded-full border border-white/40"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute right-12 bottom-7 h-1.5 w-1.5 rounded-full bg-white/40"
+        />
         {sample.isOpenSource && (
           <div
             className={cn(

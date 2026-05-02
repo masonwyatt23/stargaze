@@ -92,6 +92,42 @@ behind a login wall. Public visitors hit a 401.
 
 Alternative: move the project to your personal scope (no team gating). In Vercel dashboard → Settings → General → Transfer Project.
 
+## 8. Bulk-import your projects (whenever you're ready)
+
+You have a list of projects you want to seed Stargaze with. Use the import
+script — it handles GitHub enrichment (stars, language, README), creator
+user creation, dedup against existing rows, and rate-limit bypass.
+
+1. Create a JSON file (start from `scripts/projects.example.json`):
+   ```json
+   {
+     "default_creator_github_username": "masonwyatt23",
+     "default_creator_display_name": "Mason Wyatt",
+     "projects": [
+       {
+         "title": "My cool tool",
+         "tagline": "One-liner under 100 chars",
+         "github_repo_url": "https://github.com/masonwyatt23/my-tool",
+         "is_open_source": true,
+         "category": "ai-tool",
+         "screenshots": ["https://...png"],
+         "demo_video_url": "https://youtube.com/embed/..."
+       }
+     ]
+   }
+   ```
+
+2. Run:
+   ```bash
+   set -a; source .env.local; set +a
+   bun scripts/import-projects.ts ./my-projects.json
+   ```
+
+3. Each project is inserted, GitHub stars/language are auto-fetched if you
+   provided a repo URL, the README is rendered to HTML, and a unique slug
+   like `/p/my-tool-a3f7b2` is generated. Re-running is safe — duplicates
+   are skipped by `github_repo_url`.
+
 ## What I've already done for you
 
 - ✅ Code shipped at https://github.com/masonwyatt23/stargaze

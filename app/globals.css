@@ -1,26 +1,113 @@
 @import "tailwindcss";
 
+/* Stargaze brand tokens
+ * Star yellow on deep navy. Dark-by-default; toggleable to light.
+ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Light mode (secondary; we default to dark) */
+  --background: 0 0% 100%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+  --primary: 47 96% 53%;            /* #FACC15 — the star */
+  --primary-foreground: 222 84% 5%;
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222 47% 11%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+  --accent: 210 40% 96%;
+  --accent-foreground: 222 47% 11%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 47 96% 53%;
+  --radius: 0.75rem;
+}
+
+.dark {
+  /* Dark mode — default */
+  --background: 215 50% 10%;        /* #0B1426 — deep space navy */
+  --foreground: 210 40% 98%;
+  --card: 215 35% 13%;
+  --card-foreground: 210 40% 98%;
+  --popover: 215 50% 8%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 47 96% 58%;            /* slightly brighter star in dark */
+  --primary-foreground: 222 84% 5%;
+  --secondary: 215 30% 18%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 215 30% 18%;
+  --muted-foreground: 215 20% 65%;
+  --accent: 215 30% 22%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 63% 48%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 215 28% 22%;
+  --input: 215 28% 22%;
+  --ring: 47 96% 58%;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-color: hsl(var(--border));
+}
+
+html {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  min-height: 100dvh;
+}
+
+/* Star-trail flourish for marketing surfaces */
+.star-trail {
+  background-image: radial-gradient(circle at 20% 30%, hsl(47 96% 58% / 0.15) 0px, transparent 1px),
+                    radial-gradient(circle at 80% 60%, hsl(47 96% 58% / 0.1) 0px, transparent 1px),
+                    radial-gradient(circle at 40% 80%, hsl(47 96% 58% / 0.12) 0px, transparent 1px);
+  background-size: 200px 200px, 350px 350px, 280px 280px;
+}
+
+/* Touch / swipe surface — disable text selection on the deck */
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }

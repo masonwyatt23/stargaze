@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Stargaze
 
-## Getting Started
+> **Swipe right. Star repos. Boost makers.**
 
-First, run the development server:
+A swipe-deck for indie GitHub side projects. Right-swipe = save **and** auto-star
+the repo on GitHub. Left-swipe = skip. The leaderboard ranks creators by real
+GitHub influence delivered, not vanity points.
+
+Built for the vibe-coded era — when shipping is easy and **distribution is the bottleneck**.
+
+## Stack
+
+- **Framework:** Next.js 16 (App Router, RSC, Turbopack) + React 19
+- **Styling:** Tailwind CSS v4 + shadcn-style primitives + Lucide icons + Geist font
+- **Backend:** Supabase (Postgres + Auth + RLS + Realtime + Storage + Edge Functions)
+- **Auth:** Supabase Auth via GitHub OAuth (`public_repo` + `read:user`)
+- **Animation:** Framer Motion (drag gestures, swipe physics)
+- **Email:** Resend
+- **Deploy:** Vercel
+
+## Local development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# 1. install deps
+bun install
+
+# 2. set up env
+cp .env.example .env.local
+# fill in NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, etc.
+
+# 3. (optional) start a local Supabase for offline dev
+supabase start
+# applies supabase/migrations/* to a local Postgres
+
+# 4. dev server
+bun run dev
+# open http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Project layout
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+app/                    # Next.js App Router
+├── (marketing)/        # public landing surfaces
+├── api/                # route handlers (auto-star, README fetch, access requests)
+├── auth/callback/      # OAuth callback handler
+├── feed/               # the swipe deck
+├── saves/              # right-swipe history
+├── leaderboard/        # weekly top creators
+├── projects/new/       # project creation form
+├── settings/           # user preferences (auto-star toggle, etc.)
+├── p/[slug]/           # public share page (og:image-rich)
+└── u/[username]/       # public creator profile
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+components/             # UI components
+├── ui/                 # shadcn-style primitives
+├── swipe-deck.tsx      # Framer Motion drag deck
+└── project-card.tsx    # the card itself
 
-## Learn More
+lib/
+├── supabase/           # client + server + middleware Supabase clients
+├── github.ts           # GitHub API (star, unstar, README, repo metadata)
+├── markdown.ts         # server-side markdown render + sanitize
+└── utils.ts            # cn(), slugify(), parseGithubRepo(), formatCount()
 
-To learn more about Next.js, take a look at the following resources:
+supabase/
+├── migrations/         # SQL migrations
+├── functions/          # Edge Functions (Deno)
+└── config.toml
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Roadmap
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **v0.1 (current)** — web app: feed, swipe + auto-star, saves, leaderboard, share pages, project create
+- **v0.2** — search, categories, creator analytics dashboard, in-app push, follow creators
+- **v0.5** — native mobile via Expo (same Supabase backend)
+- **v1.0** — personalized feed (collaborative filter), curated weekly drops, sponsored boosts
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See `~/.claude/plans/this-is-a-brand-joyful-tulip.md` for the full plan.

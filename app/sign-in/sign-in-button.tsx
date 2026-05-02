@@ -1,0 +1,98 @@
+"use client";
+
+import { useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/client";
+
+function GithubIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.7-3.87-1.54-3.87-1.54-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.68 1.25 3.34.96.1-.74.4-1.25.72-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11.04 11.04 0 0 1 5.78 0c2.21-1.49 3.18-1.18 3.18-1.18.62 1.59.23 2.76.11 3.05.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.39-5.26 5.68.41.35.78 1.05.78 2.12 0 1.53-.01 2.77-.01 3.15 0 .31.21.68.8.56C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z" />
+    </svg>
+  );
+}
+
+function SpinnerIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M21 12a9 9 0 1 1-6.22-8.56" />
+    </svg>
+  );
+}
+
+type SignInButtonProps = {
+  redirectTo?: string;
+};
+
+export function SignInButton({ redirectTo }: SignInButtonProps) {
+  const [pending, setPending] = useState(false);
+
+  async function handleSignIn() {
+    setPending(true);
+
+    try {
+      const supabase = createClient();
+      const siteUrl =
+        process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
+
+      // Encode the post-auth redirect into the callback URL so the
+      // route handler can forward the user back to where they came from.
+      const callback = new URL("/auth/callback", siteUrl);
+      if (redirectTo) callback.searchParams.set("next", redirectTo);
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "github",
+        options: {
+          scopes: "public_repo read:user user:email",
+          redirectTo: callback.toString(),
+        },
+      });
+
+      if (error) {
+        toast.error("Couldn't start GitHub sign-in", {
+          description: error.message,
+        });
+        setPending(false);
+      }
+      // On success the browser is redirected to GitHub — no need to
+      // reset `pending` here.
+    } catch (err) {
+      toast.error("Unexpected error", {
+        description: err instanceof Error ? err.message : String(err),
+      });
+      setPending(false);
+    }
+  }
+
+  return (
+    <Button
+      type="button"
+      onClick={handleSignIn}
+      disabled={pending}
+      className="w-full gap-2 bg-foreground text-background hover:bg-foreground/90"
+      size="lg"
+    >
+      {pending ? (
+        <SpinnerIcon className="size-5 animate-spin" />
+      ) : (
+        <GithubIcon className="size-5" />
+      )}
+      {pending ? "Redirecting…" : "Continue with GitHub"}
+    </Button>
+  );
+}

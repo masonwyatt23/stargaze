@@ -1,0 +1,158 @@
+import { redirect } from "next/navigation";
+import { Footer } from "@/components/footer";
+import { Nav } from "@/components/nav";
+import { getCurrentUser } from "@/lib/auth/get-user";
+import { createClient } from "@/lib/supabase/server";
+import type { FeedProject } from "@/lib/types/db";
+import { FeedClient } from "./feed-client";
+
+export const dynamic = "force-dynamic";
+
+type FeedPageProps = {
+  // Next.js 16: searchParams is async.
+  searchParams: Promise<{ focus?: string }>;
+};
+
+/**
+ * Auth-gated swipe feed. Server component fetches the next ~20 unswiped
+ * live projects ranked by recency × right-swipe density.
+ */
+export default async function FeedPage({ searchParams }: FeedPageProps) {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect("/sign-in?redirect=/feed");
+  }
+
+  const { focus } = await searchParams;
+  const projects = await fetchFeedForUser(user.id, focus);
+
+  return (
+    <>
+      <Nav />
+      <main className="flex-1">
+        <div className="mx-auto flex w-full max-w-2xl flex-col items-stretch px-4 pb-32 pt-6 md:pt-10">
+          <FeedClient
+            projects={projects}
+            autoStarEnabled={user.auto_star_enabled}
+          />
+        </div>
+      </main>
+      <Footer />
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------------ */
+/* Data                                                                     */
+/* ------------------------------------------------------------------------ */
+
+async function fetchFeedForUser(
+  userId: string,
+  focusId: string | undefined,
+): Promise<FeedProject[]> {
+  const supabase = await createClient();
+
+  // Pull a generous window of recent live projects.
+  const { data: recent } = await supabase
+    .from("projects")
+    .select(
+      `id, slug, user_id, title, tagline, description_md, description_html,
+       github_repo_url, github_stars, github_language, is_open_source,
+       cta_url, category, status, created_at, updated_at,
+       creator:users!projects_user_id_fkey(id, github_username, display_name, avatar_url),
+       media:project_media(id, project_id, type, url, thumbnail_url, order_index)`,
+    )
+    .eq("status", "live")
+    .order("created_at", { ascending: false })
+    .limit(60);
+
+  if (!recent || recent.length === 0) return [];
+
+  // Find which of these the user has already swiped on; filter them out.
+  const ids = recent.map((p) => p.id);
+  const { data: swiped } = await supabase
+    .from("swipes")
+    .select("project_id")
+    .eq("user_id", userId)
+    .in("project_id", ids);
+
+  const swipedSet = new Set((swiped ?? []).map((s) => s.project_id));
+
+  // Right-swipe counts per project for ranking.
+  const { data: rights } = await supabase
+    .from("swipes")
+    .select("project_id")
+    .in("project_id", ids)
+    .eq("direction", "right");
+
+  const rightCount = new Map<string, number>();
+  for (const r of rights ?? []) {
+    rightCount.set(r.project_id, (rightCount.get(r.project_id) ?? 0) + 1);
+  }
+
+  const now = Date.now();
+
+  // v0.1 ranking: recency decays over 7 days, plus a small boost for
+  // projects with strong right-swipe density.
+  const ranked = recent
+    .filter((p) => !swipedSet.has(p.id))
+    .map((p) => {
+      const ageHours = Math.max(
+        0,
+        (now - new Date(p.created_at).getTime()) / 36e5,
+      );
+      const recency = Math.exp(-ageHours / (24 * 3));
+      const swipeBoost = Math.log1p(rightCount.get(p.id) ?? 0) * 0.4;
+      return { project: p, score: recency + swipeBoost };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  // If a focus id is provided (deep-link from a share page), bring it to
+  // the top so it's the first card the user sees.
+  const ordered = focusId
+    ? [
+        ...ranked.filter((r) => r.project.id === focusId),
+        ...ranked.filter((r) => r.project.id !== focusId),
+      ]
+    : ranked;
+
+  const top = ordered.slice(0, 20).map((r) => r.project);
+
+  return top.map((p) => {
+    const media = (p.media ?? []) as FeedProject["media"];
+    return {
+      id: p.id,
+      slug: p.slug,
+      user_id: p.user_id,
+      title: p.title,
+      tagline: p.tagline,
+      description_md: p.description_md,
+      description_html: p.description_html,
+      github_repo_url: p.github_repo_url,
+      github_stars: p.github_stars,
+      github_language: p.github_language,
+      is_open_source: p.is_open_source,
+      cta_url: p.cta_url,
+      category: p.category,
+      status: p.status,
+      created_at: p.created_at,
+      updated_at: p.updated_at,
+      creator: (Array.isArray(p.creator)
+        ? (p.creator[0] ?? {
+            id: "",
+            github_username: "",
+            display_name: null,
+            avatar_url: null,
+          })
+        : (p.creator ?? {
+            id: "",
+            github_username: "",
+            display_name: null,
+            avatar_url: null,
+          })) as unknown as FeedProject["creator"],
+      media,
+      right_swipe_count: rightCount.get(p.id) ?? 0,
+      has_demo_video: media.some((m) => m.type === "video"),
+    } satisfies FeedProject;
+  });
+}

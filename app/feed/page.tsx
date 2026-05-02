@@ -2,8 +2,14 @@ import { redirect } from "next/navigation";
 import { Footer } from "@/components/footer";
 import { FilterBar } from "@/components/landing/filter-bar";
 import { Nav } from "@/components/nav";
+import { PersonalizationBadge } from "@/components/feed/personalization-badge";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { createClient } from "@/lib/supabase/server";
+import {
+  buildUserProfile,
+  scoreProject,
+  type TasteProfile,
+} from "@/lib/feed/personalize";
 import type { FeedProject } from "@/lib/types/db";
 import { EmptyFilterState } from "./empty-filter-state";
 import { FeedClient } from "./feed-client";
@@ -41,10 +47,12 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
   const activeCategory =
     cat && cat !== "all" && VALID_CATEGORIES.has(cat) ? cat : null;
 
+  const profile = await fetchTasteProfile(user.id);
+
   const projects = await fetchFeedForUser(user.id, focus, {
     query: activeQuery,
     category: activeCategory,
-  });
+  }, profile);
 
   const filtersActive = activeQuery !== null || activeCategory !== null;
 
@@ -57,6 +65,12 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
             activeCategory={activeCategory}
             activeQuery={activeQuery}
           />
+
+          {profile.total > 0 && !filtersActive ? (
+            <div className="mb-3 mt-1 flex justify-center">
+              <PersonalizationBadge profileSize={profile.total} />
+            </div>
+          ) : null}
 
           {projects.length === 0 && filtersActive ? (
             <EmptyFilterState
@@ -85,10 +99,34 @@ type FeedFilters = {
   category: string | null;
 };
 
+/** Pulls the user's last 100 right-swipes (joined to project category +
+ *  language) and returns a TasteProfile. Cold-start tolerant — empty profile
+ *  if the user hasn't swiped yet. */
+async function fetchTasteProfile(userId: string): Promise<TasteProfile> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("swipes")
+    .select("project:projects(category, github_language)")
+    .eq("user_id", userId)
+    .eq("direction", "right")
+    .order("created_at", { ascending: false })
+    .limit(100);
+  const swipes = (data ?? [])
+    .map((row) => {
+      const p = Array.isArray(row.project) ? row.project[0] : row.project;
+      return {
+        category: (p?.category ?? null) as string | null,
+        language: (p?.github_language ?? null) as string | null,
+      };
+    });
+  return buildUserProfile(swipes);
+}
+
 async function fetchFeedForUser(
   userId: string,
   focusId: string | undefined,
   filters: FeedFilters,
+  profile: TasteProfile,
 ): Promise<FeedProject[]> {
   const supabase = await createClient();
 
@@ -151,20 +189,30 @@ async function fetchFeedForUser(
     rightCount.set(r.project_id, (rightCount.get(r.project_id) ?? 0) + 1);
   }
 
-  const now = Date.now();
+  const now = new Date();
 
-  // v0.1 ranking: recency decays over 7 days, plus a small boost for
-  // projects with strong right-swipe density.
+  // v0.2 ranking: scoreProject combines recency, popularity, GitHub
+  // stars, demo-video boost, AND personalization (cold-start safe).
   const ranked = recent
     .filter((p) => !swipedSet.has(p.id))
     .map((p) => {
-      const ageHours = Math.max(
-        0,
-        (now - new Date(p.created_at).getTime()) / 36e5,
-      );
-      const recency = Math.exp(-ageHours / (24 * 3));
-      const swipeBoost = Math.log1p(rightCount.get(p.id) ?? 0) * 0.4;
-      return { project: p, score: recency + swipeBoost };
+      const media = (p.media ?? []) as Array<{ type: string }>;
+      return {
+        project: p,
+        score: scoreProject(
+          {
+            category: p.category as string | null,
+            github_language: p.github_language as string | null,
+            github_stars: p.github_stars as number | null,
+            created_at: p.created_at as string,
+            right_swipes: rightCount.get(p.id) ?? 0,
+            total_swipes: rightCount.get(p.id) ?? 0,
+            has_demo_video: media.some((m) => m.type === "video"),
+          },
+          profile,
+          now,
+        ),
+      };
     })
     .sort((a, b) => b.score - a.score);
 

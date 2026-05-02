@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Layers, Plus, Star, Trophy } from "lucide-react";
+import { Bell, Layers, Plus, Star, Trophy } from "lucide-react";
 import { GithubIcon } from "@/components/icons/github-icon";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -39,6 +39,7 @@ function DesktopNav({ user }: { user: NavUser }) {
             <NavLink href="/feed">Feed</NavLink>
             <NavLink href="/saves">Saves</NavLink>
             <NavLink href="/leaderboard">Leaderboard</NavLink>
+            {user ? <NavLink href="/dashboard">Dashboard</NavLink> : null}
           </nav>
         </div>
 
@@ -51,6 +52,7 @@ function DesktopNav({ user }: { user: NavUser }) {
                   Submit
                 </Link>
               </Button>
+              <NotificationsBell />
               <ProfileMenu user={user} />
             </>
           ) : (
@@ -74,19 +76,22 @@ function MobileTabBar({ user }: { user: NavUser }) {
       <header className="sticky top-0 z-40 flex h-12 items-center justify-between border-b border-border/60 bg-background/70 px-4 backdrop-blur-xl md:hidden">
         <Logo size="sm" />
         {user ? (
-          <Link
-            href={`/u/${user.github_username}`}
-            className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <Avatar className="h-7 w-7">
-              {user.avatar_url ? (
-                <AvatarImage src={user.avatar_url} alt={user.github_username} />
-              ) : null}
-              <AvatarFallback>
-                {user.github_username.slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-          </Link>
+          <div className="flex items-center gap-2">
+            <NotificationsBell compact />
+            <Link
+              href={`/u/${user.github_username}`}
+              className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Avatar className="h-7 w-7">
+                {user.avatar_url ? (
+                  <AvatarImage src={user.avatar_url} alt={user.github_username} />
+                ) : null}
+                <AvatarFallback>
+                  {user.github_username.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            </Link>
+          </div>
         ) : (
           <Button asChild size="sm" variant="ghost" className="h-7 px-2 text-xs">
             <Link href="/sign-in">Sign in</Link>
@@ -170,6 +175,33 @@ function ProfileMenu({ user }: { user: NonNullable<NavUser> }) {
           {user.github_username.slice(0, 2).toUpperCase()}
         </AvatarFallback>
       </Avatar>
+    </Link>
+  );
+}
+
+/**
+ * Notifications icon link. The dot indicator is intentionally a TODO:
+ * once we wire an unread-count source we'll feed it a `hasUnread` prop;
+ * for now we always show the dot when the user might have something —
+ * conservative, accurate enough, and lets the design land first.
+ */
+function NotificationsBell({ compact }: { compact?: boolean } = {}) {
+  // TODO(notifications-count): wire to a real unread count when we have one.
+  // For now: always render the icon, with a subtle dot to draw the eye.
+  return (
+    <Link
+      href="/notifications"
+      aria-label="Notifications"
+      className={cn(
+        "relative inline-flex items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        compact ? "h-7 w-7" : "h-8 w-8",
+      )}
+    >
+      <Bell className={compact ? "h-4 w-4" : "h-[18px] w-[18px]"} />
+      <span
+        aria-hidden
+        className="absolute right-1 top-1 inline-block h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_0_2px_hsl(var(--background))]"
+      />
     </Link>
   );
 }

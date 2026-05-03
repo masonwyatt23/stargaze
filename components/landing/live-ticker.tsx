@@ -6,17 +6,15 @@ type TickerItem = {
   label: string;
 };
 
+// Warmer, friendlier rotation. Sentence case, no observatory cosplay.
 const DEFAULT_ITEMS: TickerItem[] = [
-  { glyph: "★", label: "live signal" },
-  { label: "30 projects on deck" },
-  { glyph: "→", label: "swipe right stars the repo" },
-  { label: "auto-star · backed by your GitHub OAuth" },
-  { glyph: "★", label: "weekly leaderboard resets monday 00:00 utc" },
-  { label: "no waitlist · no enterprise sales call" },
-  { glyph: "+", label: "open source friendly · indie-first" },
-  { label: "ship · swipe · be seen" },
-  { glyph: "★", label: "observation deck 01" },
-  { label: "n 38.9° w 77.0°" },
+  { glyph: "★", label: "Swipe right stars the repo on GitHub" },
+  { label: "Hand-picked indie projects" },
+  { glyph: "→", label: "No waitlist — sign in with GitHub and start" },
+  { label: "Open-source friendly · indie-first" },
+  { glyph: "+", label: "Submit your project in under 90 seconds" },
+  { label: "Top makers earn the spotlight every Monday" },
+  { glyph: "★", label: "Built for builders by builders" },
 ];
 
 /**
@@ -44,11 +42,11 @@ export function LiveTicker({
         {doubled.map((item, i) => (
           <span
             key={i}
-            className="flex shrink-0 items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-muted-foreground/80"
+            className="flex shrink-0 items-center gap-2 text-[12px] tracking-tight text-muted-foreground/85"
           >
             {item.glyph === "★" ? (
               <Star
-                className="h-2.5 w-2.5 fill-primary text-primary"
+                className="h-3 w-3 fill-primary text-primary"
                 strokeWidth={0}
               />
             ) : item.glyph ? (
@@ -56,7 +54,7 @@ export function LiveTicker({
                 {item.glyph}
               </span>
             ) : null}
-            <span className="font-mono">{item.label}</span>
+            <span>{item.label}</span>
           </span>
         ))}
       </div>

@@ -1,12 +1,11 @@
 import Link from "next/link";
-import { ArrowRight, Layers, Shuffle, Star, Trophy } from "lucide-react";
+import { ArrowRight, Layers, Shuffle, Sparkles, Star, Trophy } from "lucide-react";
 import { GithubIcon } from "@/components/icons/github-icon";
 import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/footer";
 import { Nav } from "@/components/nav";
 import { BuilderWall } from "@/components/landing/builder-wall";
-import { CoordinateMark } from "@/components/landing/coordinate-mark";
-import { FeaturedList } from "@/components/landing/featured-list";
+import { FeaturedRail } from "@/components/landing/featured-rail";
 import { HeroDemo } from "@/components/landing/hero-demo";
 import { LeaderboardSpotlight } from "@/components/landing/leaderboard-spotlight";
 import { LiveStats } from "@/components/landing/live-stats";
@@ -170,65 +169,62 @@ function Hero({
   featured: FeaturedProject[];
   stats: { liveProjects: number };
 }) {
-  const today = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-  });
-
   return (
     <section className="relative isolate overflow-hidden">
-      {/* Atmosphere — starfield + radial glow + faint grid */}
-      <div aria-hidden className="absolute inset-0 starfield opacity-80" />
+      {/* Atmosphere */}
+      <div aria-hidden className="absolute inset-0 starfield opacity-70" />
       <div
         aria-hidden
-        className="absolute inset-0 [background:radial-gradient(ellipse_900px_500px_at_80%_25%,hsl(47_96%_58%/0.12),transparent_70%)]"
+        className="absolute inset-0 [background:radial-gradient(ellipse_900px_600px_at_80%_30%,hsl(47_96%_58%/0.16),transparent_70%)]"
       />
       <div
         aria-hidden
-        className="absolute inset-0 observatory-grid opacity-[0.14] [mask-image:radial-gradient(ellipse_at_50%_30%,black_0%,transparent_75%)]"
+        className="absolute inset-0 [background:radial-gradient(ellipse_700px_400px_at_15%_85%,hsl(160_84%_50%/0.06),transparent_60%)]"
       />
 
-      <div className="relative mx-auto max-w-7xl px-6 pt-10 md:pt-14">
-        {/* TOP — coordinate strip */}
-        <div className="flex items-center gap-3">
-          <CoordinateMark label="★" value="Stargaze · Today on deck" />
-          <span className="hidden h-px flex-1 bg-foreground/10 md:block" />
-          <CoordinateMark
-            value={`${today.toUpperCase()} · ${String(stats.liveProjects).padStart(2, "0")} live`}
-            className="hidden md:flex"
-          />
+      <div className="relative mx-auto max-w-7xl px-6 pt-8 md:pt-12">
+        {/* WARM HEADER PILL — replaces the cold OBSERVATORY DECK coordinates */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-300">
+            <span className="relative inline-flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+            </span>
+            Live · {stats.liveProjects} projects today
+          </span>
+          <span className="hidden text-xs text-muted-foreground/60 sm:inline">
+            updated continuously
+          </span>
         </div>
 
-        {/* TITLE BLOCK — restrained, focused */}
-        <div className="mt-12 grid gap-10 md:mt-16 md:grid-cols-[1.4fr_1fr] md:items-end md:gap-x-16">
+        {/* HERO ROW — balanced 50/50, demo above the fold */}
+        <div className="mt-8 grid items-center gap-10 md:mt-10 md:grid-cols-[1fr_1fr] md:gap-x-14 lg:gap-x-20">
+          {/* LEFT — title + tagline + CTAs */}
           <div>
             <h1
               className="
                 editorial-display text-foreground
-                text-[clamp(2.75rem,8vw,6rem)]
-                md:text-[clamp(3rem,6vw,5.5rem)]
+                text-[clamp(2.25rem,7vw,4.5rem)]
+                md:text-[clamp(2.5rem,5vw,4rem)]
               "
             >
-              Today&apos;s top
+              Indie projects
               <br />
               <span className="bg-gradient-to-br from-primary via-primary to-amber-300 bg-clip-text text-transparent">
-                indie builds.
+                worth a star.
               </span>
             </h1>
 
             <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg">
-              <span className="text-foreground">A swipe-deck for builders.</span>{" "}
-              Right-swipe to save — and{" "}
+              A swipe-deck for builders.{" "}
+              <span className="text-foreground">Right-swipe to save</span> — and{" "}
               <span className="rounded bg-primary/15 px-1.5 py-0.5 font-medium text-primary ring-1 ring-primary/30">
                 auto-star the repo on GitHub.
-              </span>
+              </span>{" "}
+              Picked by humans, starred by you.
             </p>
-          </div>
 
-          {/* CTA + signal column */}
-          <div className="flex flex-col items-start gap-4 md:items-end md:text-right">
-            <div className="flex flex-col gap-3 sm:flex-row md:flex-row md:items-center">
+            <div className="mt-8 flex flex-col flex-wrap gap-3 sm:flex-row sm:items-center">
               <Button
                 asChild
                 size="xl"
@@ -243,7 +239,7 @@ function Hero({
               <Button asChild size="xl" variant="ghost" className="gap-2">
                 <Link href="/feed">
                   <Layers className="h-5 w-5" />
-                  Peek the deck
+                  Just browse
                 </Link>
               </Button>
               <Button
@@ -252,109 +248,71 @@ function Hero({
                 variant="ghost"
                 className="gap-2 text-primary hover:text-primary"
               >
-                {/* `/api/random` 302s to a random live project. Plain anchor
-                    is fine — the browser follows the redirect end-to-end. */}
                 <a href="/api/random">
                   <Shuffle className="h-5 w-5" />
                   Surprise me
                 </a>
               </Button>
             </div>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground/70">
-              <span className="flex items-center gap-1.5">
-                <span className="relative inline-flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-                </span>
-                Live signal
+
+            {/* Signal row */}
+            <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground/85">
+              <span className="inline-flex items-center gap-1.5">
+                <Sparkles className="h-3 w-3 text-primary" />
+                Free · open source friendly
               </span>
-              <Sep />
+              <span className="text-primary/40">·</span>
               <span>No waitlist</span>
+              <span className="text-primary/40">·</span>
+              <span>Sign in, swipe, done</span>
+            </div>
+          </div>
+
+          {/* RIGHT — animated swipe deck (the centerpiece) */}
+          <div className="relative">
+            {/* Soft halo */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 -z-10 blur-3xl"
+              style={{
+                background:
+                  "radial-gradient(circle at center, hsl(47 96% 58% / 0.25) 0%, transparent 70%)",
+              }}
+            />
+            <div className="relative mx-auto w-full max-w-[420px] md:mx-0 md:ml-auto">
+              <HeroDemo />
+            </div>
+
+            {/* Hover-pause hint */}
+            <div className="mt-12 flex items-center justify-center gap-2 text-[11px] text-muted-foreground/70 md:justify-start md:pl-2">
+              <span className="inline-block h-1 w-6 bg-primary/50" />
+              <span>3 real projects, looping. Hover to pause.</span>
             </div>
           </div>
         </div>
 
-        {/* THE FEED + THE MECHANIC ASIDE */}
-        <div className="mt-14 grid gap-10 md:mt-20 md:grid-cols-[1.6fr_1fr] md:gap-x-12">
-          {/* LEFT — featured list */}
-          <div className="min-w-0">
-            <div className="mb-5 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-primary">
-                  ★ Today on deck
-                </span>
-                <span className="hidden h-px w-12 bg-foreground/10 sm:block" />
-                <span className="hidden font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground/70 sm:inline">
-                  hand-picked · § 01
-                </span>
+        {/* HORIZONTAL FEATURED RAIL — replaces the vertical numbered list */}
+        <div className="mt-16 md:mt-24">
+          <div className="mb-4 flex items-end justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-medium text-primary">
+                <Star className="h-3 w-3 fill-primary" strokeWidth={0} />
+                Today on deck
               </div>
-              <Link
-                href="/feed"
-                className="hidden items-center gap-1 font-mono text-[10px] uppercase tracking-[0.22em] text-primary hover:underline md:inline-flex"
-              >
-                See all
-                <ArrowRight className="h-3 w-3" />
-              </Link>
+              <h2 className="mt-1 text-2xl font-bold tracking-tight md:text-3xl">
+                Hand-picked.{" "}
+                <span className="text-muted-foreground">Worth a swipe.</span>
+              </h2>
             </div>
-
-            <FeaturedList projects={featured} />
-
-            {/* Mobile "see all" */}
-            <div className="mt-5 md:hidden">
-              <Link
-                href="/feed"
-                className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.22em] text-primary hover:underline"
-              >
-                See all on the deck
-                <ArrowRight className="h-3 w-3" />
-              </Link>
-            </div>
+            <Link
+              href="/feed"
+              className="group inline-flex items-center gap-1 text-sm text-primary hover:underline"
+            >
+              See the full deck
+              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+            </Link>
           </div>
-
-          {/* RIGHT — the mechanic aside */}
-          <aside className="relative md:pl-2">
-            <div className="md:sticky md:top-32">
-              <div className="mb-5 flex items-center gap-3">
-                <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-primary">
-                  ★ The mechanic
-                </span>
-                <span className="hidden h-px flex-1 bg-foreground/10 sm:block" />
-              </div>
-
-              {/* Plate with frame corners */}
-              <div className="relative">
-                <div
-                  aria-hidden
-                  className="frame-corner absolute -inset-2 rounded-[24px]"
-                />
-                <div className="relative rounded-[20px] border hairline bg-card/50 p-5 backdrop-blur-sm md:p-6">
-                  <div className="absolute inset-x-4 top-3 flex items-center justify-between font-mono text-[9px] uppercase tracking-[0.24em] text-muted-foreground/60">
-                    <span>★ live preview</span>
-                    <span>3-card stack</span>
-                  </div>
-                  <div className="pt-7">
-                    <HeroDemo />
-                  </div>
-                </div>
-              </div>
-
-              {/* Caption + how-it-works */}
-              <div className="mt-12 space-y-4">
-                <p className="font-mono text-[11px] leading-relaxed text-muted-foreground">
-                  Right-swipe an open-source card and we star the repo on
-                  GitHub from your account, instantly. Closed-source flips to
-                  a one-tap access request.
-                </p>
-                <Link
-                  href="#mechanic"
-                  className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.22em] text-primary hover:underline"
-                >
-                  Read the mechanic
-                  <ArrowRight className="h-3 w-3" />
-                </Link>
-              </div>
-            </div>
-          </aside>
+          <FeaturedRail projects={featured} />
         </div>
       </div>
 

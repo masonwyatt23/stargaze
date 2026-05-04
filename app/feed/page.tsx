@@ -2,9 +2,13 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Footer } from "@/components/footer";
 import { FilterBar } from "@/components/landing/filter-bar";
-import { parseLanguageParam } from "@/components/landing/language-select";
-import { parseOssParam, type OssState } from "@/components/landing/oss-toggle";
-import { parseSortParam, type SortValue } from "@/components/landing/sort-select";
+import {
+  parseLanguageParam,
+  parseOssParam,
+  parseSortParam,
+  type OssState,
+  type SortValue,
+} from "@/lib/feed/filter-params";
 import { Nav } from "@/components/nav";
 import { PersonalizationBadge } from "@/components/feed/personalization-badge";
 import { getCurrentUser } from "@/lib/auth/get-user";

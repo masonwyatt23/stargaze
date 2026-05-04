@@ -89,8 +89,5 @@ export function OssToggle({ basePath, active, className }: OssToggleProps) {
   );
 }
 
-/** Validate a raw URL value, falling back to "any". */
-export function parseOssParam(raw: string | null | undefined): OssState {
-  if (raw === "true" || raw === "false") return raw;
-  return "any";
-}
+// parseOssParam moved to lib/feed/filter-params.ts (server-safe).
+export { parseOssParam } from "@/lib/feed/filter-params";

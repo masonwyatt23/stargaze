@@ -113,11 +113,5 @@ export function LanguageSelect({
   );
 }
 
-/** Trim + null-coalesce the raw URL value. */
-export function parseLanguageParam(raw: string | null | undefined): string | null {
-  if (!raw) return null;
-  const trimmed = raw.trim();
-  if (trimmed.length === 0 || trimmed.toLowerCase() === "any") return null;
-  // Cap to a reasonable length so a malicious URL can't bloat the SQL.
-  return trimmed.slice(0, 40);
-}
+// parseLanguageParam moved to lib/feed/filter-params.ts (server-safe).
+export { parseLanguageParam } from "@/lib/feed/filter-params";

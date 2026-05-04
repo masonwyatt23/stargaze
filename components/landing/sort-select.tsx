@@ -86,10 +86,7 @@ export function SortSelect({ basePath, active, className }: SortSelectProps) {
   );
 }
 
-/** Validate a raw URL value, falling back to "trending". */
-export function parseSortParam(raw: string | null | undefined): SortValue {
-  if (raw === "fresh" || raw === "popular" || raw === "alpha" || raw === "trending") {
-    return raw;
-  }
-  return "trending";
-}
+// parseSortParam moved to lib/feed/filter-params.ts so it can be called
+// from server components (this file is "use client" — server code can't
+// invoke client-side functions).
+export { parseSortParam } from "@/lib/feed/filter-params";

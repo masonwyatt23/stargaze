@@ -245,9 +245,9 @@ function Hero({
                 </Link>
               </Button>
               <Button asChild size="xl" variant="ghost" className="gap-2">
-                <Link href="/feed">
+                <Link href="/try">
                   <Layers className="h-5 w-5" />
-                  Just browse
+                  Try the deck
                 </Link>
               </Button>
               <Button

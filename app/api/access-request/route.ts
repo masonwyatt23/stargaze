@@ -140,7 +140,8 @@ export async function POST(request: Request): Promise<Response> {
 
   // ---- Send the email ----
   const apiKey = process.env.RESEND_API_KEY;
-  const fromAddr = process.env.RESEND_FROM_EMAIL ?? "Stargaze <noreply@stargaze.app>";
+  const fromAddr =
+    process.env.RESEND_FROM_EMAIL ?? "Stargaze <noreply@stargaze.ashlr.ai>";
 
   const requesterName =
     user.display_name?.trim() || user.github_username || "A Stargaze user";
@@ -162,7 +163,8 @@ export async function POST(request: Request): Promise<Response> {
           : ""
       }
       <p style="color:#888;font-size:12px;margin-top:24px;">
-        Sent via Stargaze — manage your projects at https://stargaze.app
+        Sent via Stargaze — manage your projects at
+        <a href="https://stargaze.ashlr.ai/dashboard">stargaze.ashlr.ai</a>
       </p>
     </div>
   `.trim();

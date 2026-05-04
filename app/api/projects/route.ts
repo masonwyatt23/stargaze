@@ -62,6 +62,58 @@ export async function POST(req: Request) {
     );
   }
 
+  // Anti-spam: GitHub account must be >30 days old to submit. Brand-new
+  // throwaway accounts are the cheapest abuse vector, and 30 days is enough
+  // friction to make spam farms unprofitable without locking out real makers.
+  // Network failures fall through (allow) — we'd rather take a small spam hit
+  // than block a legit submitter on a transient GitHub outage.
+  if (user.github_username) {
+    try {
+      const ghRes = await fetch(
+        `https://api.github.com/users/${encodeURIComponent(user.github_username)}`,
+        {
+          headers: {
+            Accept: "application/vnd.github+json",
+            "User-Agent": "stargaze.ashlr.ai",
+          },
+          signal: AbortSignal.timeout(4000),
+        },
+      );
+      if (ghRes.ok) {
+        const ghBody = (await ghRes.json()) as { created_at?: string };
+        if (ghBody.created_at) {
+          const ageDays =
+            (Date.now() - new Date(ghBody.created_at).getTime()) /
+            (24 * 3600 * 1000);
+          if (ageDays < 30) {
+            log({
+              level: "info",
+              event: "projects.create.account_too_young",
+              user_id: user.id,
+              username: user.github_username,
+              age_days: Math.round(ageDays),
+            });
+            return NextResponse.json(
+              {
+                error:
+                  "GitHub accounts need to be at least 30 days old to submit. Come back soon!",
+              },
+              { status: 403 },
+            );
+          }
+        }
+      }
+    } catch (err) {
+      log({
+        level: "warn",
+        event: "projects.create.account_age_check_failed",
+        user_id: user.id,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      // Allow submission — fail-open on transient GitHub errors.
+    }
+  }
+
   const description_html = parsed.description_md
     ? renderMarkdown(parsed.description_md)
     : null;

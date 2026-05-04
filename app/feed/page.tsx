@@ -61,6 +61,12 @@ export default async function FeedPage(props: FeedPageProps) {
   try {
     return await renderFeedPage(props);
   } catch (err) {
+    // Next.js redirect() and notFound() work by throwing — let them through.
+    const digest = (err as { digest?: string })?.digest;
+    if (typeof digest === "string" && (digest.startsWith("NEXT_REDIRECT") || digest === "NEXT_NOT_FOUND")) {
+      throw err;
+    }
+
     log({
       level: "error",
       event: "feed.page.crashed",

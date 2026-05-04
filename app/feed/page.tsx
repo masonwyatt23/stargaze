@@ -95,11 +95,11 @@ function FeedCrashFallback({ message }: { message: string }) {
               </Link>{" "}
               while we sort it out.
             </p>
-            <details className="mt-4 text-left">
+            <details open className="mt-4 text-left">
               <summary className="cursor-pointer font-mono text-xs text-muted-foreground/70">
                 technical details
               </summary>
-              <pre className="mt-2 overflow-x-auto rounded bg-card/60 p-3 text-[11px] text-muted-foreground">
+              <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all rounded bg-card/60 p-3 text-[11px] text-muted-foreground">
                 {message}
               </pre>
             </details>

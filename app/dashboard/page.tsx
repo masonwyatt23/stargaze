@@ -60,7 +60,7 @@ export default async function DashboardPage() {
       <Nav />
       <RealtimeListener projectTitles={data.projectTitleMap} />
       <main className="flex-1">
-        <div className="mx-auto w-full max-w-6xl px-4 pb-32 pt-6 md:pt-10">
+        <div className="mx-auto w-full max-w-6xl px-3 pb-24 pt-4 sm:px-4 md:pb-32 md:pt-10">
           {/* Welcome row */}
           <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
@@ -75,17 +75,18 @@ export default async function DashboardPage() {
                 access to what you&apos;ve shipped.
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
               <Button asChild className="gap-1.5">
                 <Link href="/projects/new">
                   <Plus className="h-4 w-4" />
-                  Submit a project
+                  Submit
+                  <span className="hidden sm:inline">a project</span>
                 </Link>
               </Button>
               <Button asChild variant="outline" className="gap-1.5">
                 <Link href={`/u/${user.github_username}`}>
                   <UserCircle2 className="h-4 w-4" />
-                  View profile
+                  Profile
                 </Link>
               </Button>
             </div>

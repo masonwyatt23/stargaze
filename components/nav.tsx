@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bell, Layers, Plus, Star, Trophy } from "lucide-react";
+import { Bell, Layers, Plus, Star, Trophy, User } from "lucide-react";
 import { GithubIcon } from "@/components/icons/github-icon";
 import { ShuffleButton } from "@/components/landing/shuffle-button";
 import { Button } from "@/components/ui/button";
@@ -80,14 +80,15 @@ function MobileTabBar({ user }: { user: NavUser }) {
   return (
     <>
       {/* Mobile-only top strip with logo + sign-in */}
-      <header className="sticky top-0 z-40 flex h-12 items-center justify-between border-b border-border/60 bg-background/70 px-4 backdrop-blur-xl md:hidden">
+      <header className="sticky top-0 z-40 flex h-12 items-center justify-between border-b border-border/60 bg-background/80 px-3 backdrop-blur-xl md:hidden">
         <Logo size="sm" />
         {user ? (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <NotificationsBell compact />
             <Link
               href={`/u/${user.github_username}`}
-              className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="Your profile"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Avatar className="h-7 w-7">
                 {user.avatar_url ? (
@@ -100,28 +101,48 @@ function MobileTabBar({ user }: { user: NavUser }) {
             </Link>
           </div>
         ) : (
-          <Button asChild size="sm" variant="ghost" className="h-7 px-2 text-xs">
-            <Link href="/sign-in">Sign in</Link>
+          <Button asChild size="sm" className="h-9 gap-1.5 px-3 text-xs">
+            <Link href="/sign-in">
+              <GithubIcon className="h-3.5 w-3.5" />
+              Sign in
+            </Link>
           </Button>
         )}
       </header>
 
-      {/* Bottom tab bar */}
+      {/* Bottom tab bar — 5 tabs, safe-area aware for iOS home indicator */}
       <nav
         aria-label="Primary"
-        className="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-4 border-t border-border/60 bg-background/85 backdrop-blur-xl md:hidden"
+        className="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-5 border-t border-border/60 bg-background/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
       >
         <TabBarLink href="/feed" icon={<Layers className="h-5 w-5" />} label="Feed" />
         <TabBarLink href="/saves" icon={<Star className="h-5 w-5" />} label="Saves" />
+        <TabBarLink
+          href={user ? "/projects/new" : "/sign-in"}
+          icon={<Plus className="h-5 w-5" />}
+          label="Submit"
+          emphasis
+        />
         <TabBarLink
           href="/leaderboard"
           icon={<Trophy className="h-5 w-5" />}
           label="Leaders"
         />
         <TabBarLink
-          href={user ? "/projects/new" : "/sign-in"}
-          icon={<Plus className="h-5 w-5" />}
-          label="Submit"
+          href={user ? `/u/${user.github_username}` : "/sign-in"}
+          icon={
+            user && user.avatar_url ? (
+              <Avatar className="h-5 w-5">
+                <AvatarImage src={user.avatar_url} alt={user.github_username} />
+                <AvatarFallback className="text-[9px]">
+                  {user.github_username.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            ) : (
+              <User className="h-5 w-5" />
+            )
+          }
+          label="Profile"
         />
       </nav>
     </>
@@ -149,18 +170,31 @@ function TabBarLink({
   href,
   icon,
   label,
+  emphasis,
 }: {
   href: string;
   icon: React.ReactNode;
   label: string;
+  /** Submit-style centerpiece tab — pops the icon visually. */
+  emphasis?: boolean;
 }) {
   return (
     <Link
       href={href}
-      className="flex flex-col items-center justify-center gap-0.5 py-2 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+      className={cn(
+        "flex min-h-[56px] flex-col items-center justify-center gap-0.5 py-2 text-[11px] text-muted-foreground transition-colors active:bg-accent/40 hover:text-foreground focus-visible:outline-none focus-visible:bg-accent/40",
+      )}
     >
-      {icon}
-      <span>{label}</span>
+      <span
+        className={cn(
+          "flex items-center justify-center transition-transform",
+          emphasis &&
+            "h-9 w-9 rounded-full bg-primary text-primary-foreground shadow-[0_4px_18px_-4px_hsl(47_96%_58%/0.6)]",
+        )}
+      >
+        {icon}
+      </span>
+      <span className={cn(emphasis && "text-primary/90")}>{label}</span>
     </Link>
   );
 }
@@ -183,10 +217,10 @@ function NotificationsBell({ compact }: { compact?: boolean } = {}) {
       aria-label="Notifications"
       className={cn(
         "relative inline-flex items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-        compact ? "h-7 w-7" : "h-8 w-8",
+        compact ? "h-11 w-11" : "h-8 w-8",
       )}
     >
-      <Bell className={compact ? "h-4 w-4" : "h-[18px] w-[18px]"} />
+      <Bell className={compact ? "h-[18px] w-[18px]" : "h-[18px] w-[18px]"} />
       <span
         aria-hidden
         className="absolute right-1 top-1 inline-block h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_0_2px_hsl(var(--background))]"

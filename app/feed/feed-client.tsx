@@ -111,6 +111,9 @@ export function FeedClient({ projects, autoStarEnabled }: FeedClientProps) {
 
   return (
     <>
+      {/* Deck — full-bleed and viewport-tall on mobile, contained on desktop.
+          The deck self-sizes: 72dvh on mobile (capped 640px), 3:4 portrait
+          on md+. */}
       <div className="relative w-full">
         <SwipeDeck
           projects={remaining}
@@ -124,12 +127,15 @@ export function FeedClient({ projects, autoStarEnabled }: FeedClientProps) {
 
       <SwipeButtons
         onSwipe={handleButtonSwipe}
-        className="mt-8"
+        className="mt-4 md:mt-8"
         disabled={!top}
       />
 
-      <p className="mt-6 text-center text-xs text-muted-foreground">
+      <p className="mt-3 hidden text-center text-xs text-muted-foreground md:mt-6 md:block">
         ← skip ✕ &nbsp;·&nbsp; star → 🌟 &nbsp;·&nbsp; tap card to read more
+      </p>
+      <p className="mt-2 text-center text-[11px] text-muted-foreground/80 md:hidden">
+        Swipe · or tap to read more
       </p>
 
       <AccessRequestModal

@@ -74,7 +74,7 @@ export default async function LeaderboardPage({
     <>
       <Nav />
       <main className="flex-1">
-        <div className="mx-auto w-full max-w-3xl px-4 pb-32 pt-6 md:pt-10">
+        <div className="mx-auto w-full max-w-3xl px-3 pb-24 pt-4 sm:px-4 md:pb-32 md:pt-10">
           <Header
             resetIso={resetIso}
             categoryLabel={
@@ -165,10 +165,10 @@ function LeaderRow({
             "border-primary/50 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent shadow-[0_0_30px_hsl(47_96%_58%/0.10)]",
         )}
       >
-        <CardContent className="flex items-center gap-4 p-4">
+        <CardContent className="flex items-center gap-2.5 p-3 sm:gap-4 sm:p-4">
           <span
             className={cn(
-              "relative w-10 text-center font-mono text-lg tabular-nums",
+              "relative w-7 shrink-0 text-center font-mono text-base tabular-nums sm:w-10 sm:text-lg",
               isFirst
                 ? "text-primary"
                 : rank <= 3
@@ -185,12 +185,12 @@ function LeaderRow({
             #{rank}
           </span>
 
-          {/* Top project thumbnail (if any). Falls back to a subtle tile so
-              row heights stay aligned. */}
+          {/* Top project thumbnail. Shown on every breakpoint now —
+              having it visible on phones makes the rank rows scannable. */}
           {topProject ? (
             <Link
               href={`/p/${topProject.slug}`}
-              className="hidden shrink-0 sm:block"
+              className="shrink-0"
               aria-label={`View ${topProject.title}`}
             >
               <ProjectThumb
@@ -200,16 +200,16 @@ function LeaderRow({
               />
             </Link>
           ) : (
-            <div className="hidden h-12 w-12 shrink-0 rounded-lg bg-secondary/40 ring-1 ring-border/40 sm:block" />
+            <div className="h-10 w-10 shrink-0 rounded-lg bg-secondary/40 ring-1 ring-border/40 sm:h-12 sm:w-12" />
           )}
 
           <Link
             href={`/u/${leader.github_username}`}
-            className="flex min-w-0 flex-1 items-center gap-3 hover:opacity-90"
+            className="flex min-w-0 flex-1 items-center gap-2.5 hover:opacity-90 sm:gap-3"
           >
             <Avatar
               className={cn(
-                "h-10 w-10 ring-1",
+                "h-9 w-9 shrink-0 ring-1 sm:h-10 sm:w-10",
                 isFirst ? "ring-primary/50" : "ring-border",
               )}
             >
@@ -224,21 +224,23 @@ function LeaderRow({
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-              <p className="truncate font-semibold">
+              <p className="truncate text-sm font-semibold sm:text-base">
                 {leader.display_name ?? leader.github_username}
               </p>
-              <p className="truncate text-xs text-muted-foreground">
+              <p className="truncate text-[11px] text-muted-foreground sm:text-xs">
                 @{leader.github_username}
                 {leader.projects_with_swipes > 0 ? (
                   <>
                     {" · "}
-                    {leader.projects_with_swipes} project
+                    {leader.projects_with_swipes}{" "}
+                    <span className="hidden sm:inline">project</span>
+                    <span className="sm:hidden">proj</span>
                     {leader.projects_with_swipes === 1 ? "" : "s"}
                   </>
                 ) : null}
               </p>
               {topProject ? (
-                <p className="mt-1 truncate text-xs text-muted-foreground">
+                <p className="mt-0.5 hidden truncate text-xs text-muted-foreground sm:block">
                   Top:&nbsp;
                   <span className="text-foreground hover:underline">
                     {topProject.title}
@@ -250,13 +252,13 @@ function LeaderRow({
 
           <div
             className={cn(
-              "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold ring-1",
+              "flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-sm",
               isFirst
                 ? "bg-primary/20 text-primary ring-primary/40"
                 : "bg-primary/10 text-primary ring-primary/20",
             )}
           >
-            <Star className="h-4 w-4 fill-primary" />
+            <Star className="h-3.5 w-3.5 fill-primary sm:h-4 sm:w-4" />
             {formatCount(leader.right_swipes_week)}
           </div>
         </CardContent>
@@ -277,7 +279,7 @@ function ProjectThumb({
   return (
     <div
       className={cn(
-        "flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg ring-1 transition",
+        "flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg ring-1 transition sm:h-12 sm:w-12",
         isFirst ? "ring-primary/40" : "ring-border/60",
       )}
     >

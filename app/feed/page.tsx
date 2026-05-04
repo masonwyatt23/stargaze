@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Footer } from "@/components/footer";
 import { FilterBar } from "@/components/landing/filter-bar";
@@ -13,6 +14,7 @@ import {
   scoreProject,
   type TasteProfile,
 } from "@/lib/feed/personalize";
+import { log } from "@/lib/log";
 import type { FeedProject } from "@/lib/types/db";
 import { EmptyFilterState } from "./empty-filter-state";
 import { FeedClient } from "./feed-client";
@@ -68,20 +70,45 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
   const activeOss = parseOssParam(oss);
   const activeLanguage = parseLanguageParam(lang);
 
-  const profile = await fetchTasteProfile(user.id);
+  // Defensive — neither failure should crash the page.
+  let profile: TasteProfile;
+  try {
+    profile = await fetchTasteProfile(user.id);
+  } catch (err) {
+    log({
+      level: "error",
+      event: "feed.profile.failed",
+      userId: user.id,
+      error: (err as Error).message,
+    });
+    profile = { categories: new Map(), languages: new Map(), total: 0 };
+  }
 
-  const projects = await fetchFeedForUser(
-    user.id,
-    focus,
-    {
-      query: activeQuery,
-      category: activeCategory,
-      sort: activeSort,
-      oss: activeOss,
-      language: activeLanguage,
-    },
-    profile,
-  );
+  let projects: FeedProject[] = [];
+  try {
+    projects = await fetchFeedForUser(
+      user.id,
+      focus,
+      {
+        query: activeQuery,
+        category: activeCategory,
+        sort: activeSort,
+        oss: activeOss,
+        language: activeLanguage,
+      },
+      profile,
+    );
+  } catch (err) {
+    log({
+      level: "error",
+      event: "feed.fetch.failed",
+      userId: user.id,
+      filters: { q: activeQuery, cat: activeCategory, sort: activeSort, oss: activeOss, lang: activeLanguage },
+      error: (err as Error).message,
+      stack: (err as Error).stack?.slice(0, 1500),
+    });
+    projects = [];
+  }
 
   const filtersActive =
     activeQuery !== null ||
@@ -94,7 +121,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
     <>
       <Nav />
       <main className="flex-1">
-        <div className="mx-auto flex w-full max-w-2xl flex-col items-stretch px-4 pb-32 pt-6 md:pt-10">
+        <div className="mx-auto flex w-full max-w-2xl flex-col items-stretch px-3 pb-24 pt-3 md:px-4 md:pb-32 md:pt-10">
           <FilterBar
             activeCategory={activeCategory}
             activeQuery={activeQuery}
@@ -104,7 +131,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
           />
 
           {profile.total > 0 && !filtersActive ? (
-            <div className="mb-3 mt-1 flex justify-center">
+            <div className="mb-2 mt-0.5 flex justify-center md:mb-3 md:mt-1">
               <PersonalizationBadge profileSize={profile.total} />
             </div>
           ) : null}
@@ -114,6 +141,8 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
               query={activeQuery}
               category={activeCategory}
             />
+          ) : projects.length === 0 ? (
+            <EmptyDeckState username={user.github_username} />
           ) : (
             <FeedClient
               projects={projects}
@@ -124,6 +153,23 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
       </main>
       <Footer />
     </>
+  );
+}
+
+function EmptyDeckState({ username }: { username: string }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-border/60 bg-card/40 p-10 text-center">
+      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 ring-1 ring-primary/30">
+        <span className="text-2xl">★</span>
+      </div>
+      <h2 className="text-xl font-semibold">You&apos;re all caught up, @{username}.</h2>
+      <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+        Either you&apos;ve seen every project, or the feed is regrouping. Try{" "}
+        <Link href="/api/random" className="text-primary underline">a surprise</Link>,
+        peek the <Link href="/launches" className="text-primary underline">launch wall</Link>,
+        or <Link href="/projects/new" className="text-primary underline">submit something</Link>.
+      </p>
+    </div>
   );
 }
 

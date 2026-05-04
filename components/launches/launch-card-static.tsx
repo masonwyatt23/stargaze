@@ -75,20 +75,20 @@ export function LaunchCardStatic({
       />
 
       {/* ============================ LEFT (60%) ============================ */}
-      <div className="relative z-10 flex w-full flex-col justify-between px-6 pb-10 pt-24 md:w-[60%] md:px-14 md:pb-14 md:pt-28">
-        <div className="flex flex-col gap-6">
+      <div className="relative z-10 flex w-full flex-col justify-between px-5 pb-8 pt-20 sm:px-6 sm:pt-24 md:w-[60%] md:px-14 md:pb-14 md:pt-28">
+        <div className="flex flex-col gap-5 sm:gap-6">
           <div className="mono-caption font-mono text-primary/80">
             § {indexLabel} / {totalLabel}
           </div>
 
           <h1
             id={`launch-${project.id}-title`}
-            className="editorial-display text-5xl text-foreground sm:text-6xl md:text-7xl lg:text-[5.5rem]"
+            className="editorial-display text-[2.5rem] text-foreground sm:text-6xl md:text-7xl lg:text-[5.5rem]"
           >
             {project.title}
           </h1>
 
-          <p className="max-w-xl text-lg leading-relaxed text-muted-foreground md:text-xl">
+          <p className="max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg md:text-xl">
             {project.tagline}
           </p>
 
@@ -117,7 +117,7 @@ export function LaunchCardStatic({
       </div>
 
       {/* ============================ RIGHT (40%) ============================ */}
-      <div className="relative flex w-full items-center justify-center px-6 pb-12 pt-2 md:w-[40%] md:px-10 md:pb-14 md:pt-28">
+      <div className="relative flex w-full items-center justify-center px-5 pb-10 pt-2 sm:px-6 sm:pb-12 md:w-[40%] md:px-10 md:pb-14 md:pt-28">
         <div className="relative w-full max-w-md md:max-w-none">
           {/* Soft halo behind the media. */}
           <div

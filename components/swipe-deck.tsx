@@ -179,7 +179,10 @@ export function SwipeDeck({
     return (
       <div
         className={cn(
-          "relative mx-auto flex aspect-[3/4] w-full max-w-md items-center justify-center",
+          // Default: phone gets viewport-aware height, desktop falls back to
+          // the classic 3:4 portrait card. Caller can override with className.
+          "relative mx-auto flex w-full max-w-md items-center justify-center",
+          "h-[min(72dvh,640px)] md:h-auto md:aspect-[3/4]",
           className,
         )}
       >
@@ -191,7 +194,10 @@ export function SwipeDeck({
   return (
     <div
       className={cn(
-        "relative mx-auto aspect-[3/4] w-full max-w-md",
+        "relative mx-auto w-full max-w-md",
+        // Same dual-mode sizing — viewport-fit on phones, 3:4 portrait on
+        // desktop. Caller can override with className.
+        "h-[min(72dvh,640px)] md:h-auto md:aspect-[3/4]",
         className,
       )}
     >

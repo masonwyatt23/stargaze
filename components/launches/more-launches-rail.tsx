@@ -45,7 +45,7 @@ export function MoreLaunchesRail({
         className,
       )}
     >
-      <div className="mx-auto w-full max-w-7xl px-6 py-10 md:px-10 md:py-14">
+      <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 md:px-10 md:py-14">
         <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="mono-caption font-mono text-primary/80">
@@ -76,7 +76,7 @@ export function MoreLaunchesRail({
           {projects.map((p) => (
             <li
               key={p.id}
-              className="w-[260px] shrink-0 snap-start md:w-[280px]"
+              className="w-[78%] shrink-0 snap-start sm:w-[260px] md:w-[280px]"
             >
               <Link
                 href={`/launches/${p.slug}`}

@@ -182,7 +182,7 @@ function Hero({
         className="absolute inset-0 [background:radial-gradient(ellipse_700px_400px_at_15%_85%,hsl(160_84%_50%/0.06),transparent_60%)]"
       />
 
-      <div className="relative mx-auto max-w-7xl px-6 pt-8 md:pt-12">
+      <div className="relative mx-auto max-w-7xl px-4 pt-5 sm:px-6 sm:pt-8 md:pt-12">
         {/* WARM HEADER PILL — replaces the cold OBSERVATORY DECK coordinates */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-300">
@@ -197,10 +197,11 @@ function Hero({
           </span>
         </div>
 
-        {/* HERO ROW — balanced 50/50, demo above the fold */}
-        <div className="mt-8 grid items-center gap-10 md:mt-10 md:grid-cols-[1fr_1fr] md:gap-x-14 lg:gap-x-20">
-          {/* LEFT — title + tagline + CTAs */}
-          <div>
+        {/* HERO ROW — balanced 50/50 on desktop. On mobile we flip the
+            order: demo first (visual hook), then title + CTAs below. */}
+        <div className="mt-6 grid items-center gap-8 md:mt-10 md:grid-cols-[1fr_1fr] md:gap-x-14 md:gap-y-10 lg:gap-x-20">
+          {/* LEFT — title + tagline + CTAs (md:order-1, mobile second) */}
+          <div className="order-2 md:order-1">
             <h1
               className="
                 editorial-display text-foreground
@@ -268,8 +269,10 @@ function Hero({
             </div>
           </div>
 
-          {/* RIGHT — animated swipe deck (the centerpiece) */}
-          <div className="relative">
+          {/* RIGHT — animated swipe deck (the centerpiece). On mobile we
+              promote it to the top of the hero so the visual hook lands
+              before any copy. */}
+          <div className="relative order-1 md:order-2">
             {/* Soft halo */}
             <div
               aria-hidden
@@ -279,12 +282,13 @@ function Hero({
                   "radial-gradient(circle at center, hsl(47 96% 58% / 0.25) 0%, transparent 70%)",
               }}
             />
-            <div className="relative mx-auto w-full max-w-[420px] md:mx-0 md:ml-auto">
+            <div className="relative mx-auto w-full max-w-[320px] sm:max-w-[380px] md:mx-0 md:ml-auto md:max-w-[420px]">
               <HeroDemo />
             </div>
 
-            {/* Hover-pause hint */}
-            <div className="mt-12 flex items-center justify-center gap-2 text-[11px] text-muted-foreground/70 md:justify-start md:pl-2">
+            {/* Hover-pause hint — desktop only; on mobile the looping demo
+                is self-evident and the line is just clutter. */}
+            <div className="mt-12 hidden items-center justify-center gap-2 text-[11px] text-muted-foreground/70 md:flex md:justify-start md:pl-2">
               <span className="inline-block h-1 w-6 bg-primary/50" />
               <span>3 real projects, looping. Hover to pause.</span>
             </div>
@@ -346,8 +350,8 @@ function Bulletin({
   leaders: LeaderRow[];
 }) {
   return (
-    <div className="mx-auto max-w-7xl px-6">
-      <section className="py-14 md:py-20">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6">
+      <section className="py-10 md:py-20">
         <SectionFrame
           index={2}
           caption="Live signal · platform readout"
@@ -383,7 +387,7 @@ function Bulletin({
         </div>
       </section>
 
-      <section id="mechanic" className="scroll-mt-24 py-14 md:py-20">
+      <section id="mechanic" className="scroll-mt-24 py-10 md:py-20">
         <SectionFrame
           index={3}
           caption="The mechanic · how a swipe becomes a star"
@@ -391,7 +395,7 @@ function Bulletin({
         <Mechanic />
       </section>
 
-      <section className="py-14 md:py-20">
+      <section className="py-10 md:py-20">
         <div className="mb-6 flex items-end justify-between gap-6">
           <SectionFrame
             index={4}
@@ -414,7 +418,7 @@ function Bulletin({
         <MagazineGrid projects={featured} />
       </section>
 
-      <section className="py-14 md:py-20">
+      <section className="py-10 md:py-20">
         <SectionFrame
           index={5}
           caption="This week's constellation · leaderboard"
@@ -432,7 +436,7 @@ function Bulletin({
         <LeaderboardSpotlight leaders={leaders} />
       </section>
 
-      <section className="py-14 md:py-20">
+      <section className="py-10 md:py-20">
         <SectionFrame
           index={6}
           caption="For makers · distribution as a service"
@@ -442,7 +446,7 @@ function Bulletin({
         </div>
       </section>
 
-      <section className="py-14 pb-24 md:py-20 md:pb-32">
+      <section className="py-10 pb-20 md:py-20 md:pb-32">
         <SectionFrame
           index={7}
           caption="From the field · what makers say"

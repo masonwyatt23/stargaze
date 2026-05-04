@@ -82,7 +82,7 @@ export function HeroDemo() {
 
   return (
     <div
-      className="relative mx-auto h-[440px] w-full max-w-[360px]"
+      className="relative mx-auto h-[380px] w-full max-w-[360px] sm:h-[440px]"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       aria-hidden

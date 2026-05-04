@@ -17,7 +17,7 @@ export function SwipeButtons({ onSwipe, disabled, className }: SwipeButtonsProps
   return (
     <div
       className={cn(
-        "flex items-center justify-center gap-8",
+        "flex items-center justify-center gap-6 sm:gap-8",
         className,
       )}
     >
@@ -27,7 +27,7 @@ export function SwipeButtons({ onSwipe, disabled, className }: SwipeButtonsProps
         disabled={disabled}
         onClick={() => onSwipe("left")}
         className={cn(
-          "group relative flex h-16 w-16 items-center justify-center rounded-full",
+          "group relative flex h-14 w-14 items-center justify-center rounded-full sm:h-16 sm:w-16",
           "border border-border bg-card text-muted-foreground shadow-lg shadow-black/30",
           "transition-all duration-150",
           "hover:border-destructive/60 hover:text-destructive hover:shadow-destructive/20 hover:scale-105",
@@ -36,7 +36,7 @@ export function SwipeButtons({ onSwipe, disabled, className }: SwipeButtonsProps
           "disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100",
         )}
       >
-        <X className="h-7 w-7" strokeWidth={2.5} />
+        <X className="h-6 w-6 sm:h-7 sm:w-7" strokeWidth={2.5} />
       </button>
 
       <button
@@ -45,7 +45,7 @@ export function SwipeButtons({ onSwipe, disabled, className }: SwipeButtonsProps
         disabled={disabled}
         onClick={() => onSwipe("right")}
         className={cn(
-          "group relative flex h-20 w-20 items-center justify-center rounded-full",
+          "group relative flex h-[72px] w-[72px] items-center justify-center rounded-full sm:h-20 sm:w-20",
           "bg-primary text-primary-foreground shadow-xl shadow-primary/30",
           "transition-all duration-150",
           "hover:scale-110 hover:shadow-primary/50",
@@ -54,7 +54,10 @@ export function SwipeButtons({ onSwipe, disabled, className }: SwipeButtonsProps
           "disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100",
         )}
       >
-        <Star className="h-9 w-9 fill-primary-foreground" strokeWidth={2} />
+        <Star
+          className="h-8 w-8 fill-primary-foreground sm:h-9 sm:w-9"
+          strokeWidth={2}
+        />
         <span
           aria-hidden
           className="pointer-events-none absolute inset-0 rounded-full bg-primary/40 blur-xl transition-opacity duration-300 group-hover:opacity-100 opacity-0"

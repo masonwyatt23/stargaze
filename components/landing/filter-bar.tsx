@@ -6,6 +6,7 @@ import { OssToggle, type OssState } from "./oss-toggle";
 import { SearchInput } from "./search-input";
 import { ShuffleButton } from "./shuffle-button";
 import { SortSelect, type SortValue } from "./sort-select";
+import { MobileFilterSheet } from "@/components/mobile/mobile-filter-sheet";
 
 const FEED_CATEGORIES: CategoryChip[] = [
   { value: "ai-tool", label: "AI" },
@@ -32,10 +33,12 @@ type FilterBarProps = {
 };
 
 /**
- * Sticky filter bar above the swipe deck. Three rows, all URL-driven:
- *   1. Search (full width)
- *   2. Category chips (horizontal scroll on mobile)
- *   3. Sort · OSS · Language · Shuffle (wraps on narrow screens)
+ * Sticky filter bar above the swipe deck.
+ *
+ * Desktop (md+): three rows — search, category chips, sort/oss/lang/shuffle.
+ * Mobile (<md):  one row — chips + a "Filters" button that opens a bottom
+ *                sheet containing search + the secondary controls. Keeps
+ *                screen real-estate for the deck itself.
  *
  * Every control preserves the other params on change so deep-linking is
  * trivial — `?q=cli&sort=fresh&oss=true&lang=Rust` is a valid URL.
@@ -51,8 +54,29 @@ export function FilterBar({
   hideAdvanced = false,
 }: FilterBarProps) {
   return (
-    <div className="sticky top-16 z-30 -mx-4 mb-4 border-b border-border/40 bg-background/80 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex flex-col gap-2.5">
+    <div className="sticky top-12 z-30 -mx-4 mb-3 border-b border-border/40 bg-background/85 px-4 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/65 md:top-16 md:mb-4 md:py-3">
+      {/* Mobile: one row, chips + Filters trigger */}
+      <div className="flex items-center gap-2 md:hidden">
+        <div className="min-w-0 flex-1">
+          <CategoryChipBar
+            categories={categories}
+            active={activeCategory}
+            basePath={basePath}
+          />
+        </div>
+        {hideAdvanced ? null : (
+          <MobileFilterSheet
+            basePath={basePath}
+            activeQuery={activeQuery}
+            activeSort={activeSort}
+            activeOss={activeOss}
+            activeLanguage={activeLanguage}
+          />
+        )}
+      </div>
+
+      {/* Desktop: full filter stack */}
+      <div className="hidden flex-col gap-2.5 md:flex">
         <SearchInput
           basePath={basePath}
           initialValue={activeQuery ?? ""}

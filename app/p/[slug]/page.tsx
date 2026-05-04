@@ -139,11 +139,14 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     <>
       <Nav />
       <main className="flex-1">
-        {/* ============================ Hero ============================ */}
+        {/* ============================ Hero ============================
+            Mobile: clean single-column stack, no heavy blurred wallpaper.
+            Desktop: keeps the full-bleed blurred screenshot atmosphere. */}
         <section className="relative isolate overflow-hidden border-b border-border/60">
-          {/* Blurred screenshot wallpaper */}
+          {/* Blurred screenshot wallpaper — desktop only; on mobile the
+              wallpaper costs more than it adds (perf + clarity). */}
           {heroBackground ? (
-            <div aria-hidden className="absolute inset-0 -z-10">
+            <div aria-hidden className="absolute inset-0 -z-10 hidden md:block">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={heroBackground}
@@ -152,17 +155,16 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
               />
               <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/85 to-background" />
             </div>
-          ) : (
-            <div
-              aria-hidden
-              className="absolute inset-0 -z-10 bg-gradient-to-br from-primary/10 via-background to-background"
-            />
-          )}
+          ) : null}
+          <div
+            aria-hidden
+            className="absolute inset-0 -z-10 bg-gradient-to-br from-primary/8 via-background to-background md:hidden"
+          />
 
-          <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 pb-12 pt-10 md:grid-cols-2 md:gap-12 md:pb-16 md:pt-16">
-            {/* Left: project visual */}
+          <div className="mx-auto grid w-full max-w-6xl gap-6 px-4 pb-8 pt-6 md:grid-cols-2 md:gap-12 md:pb-16 md:pt-16">
+            {/* Top on mobile / Left on desktop: project visual */}
             <div className="md:order-1">
-              <Card className="overflow-hidden border-border/70 bg-card/90 shadow-2xl shadow-black/40 backdrop-blur-sm">
+              <Card className="overflow-hidden border-border/70 bg-card/90 shadow-xl shadow-black/30 backdrop-blur-sm md:shadow-2xl md:shadow-black/40">
                 {project.media.length > 0 ? (
                   <MediaGallery
                     media={project.media}
@@ -177,11 +179,11 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
               </Card>
             </div>
 
-            {/* Right: project details + CTAs */}
-            <div className="flex flex-col justify-center gap-5 md:order-2">
+            {/* Bottom on mobile / Right on desktop: project details + CTAs */}
+            <div className="flex flex-col justify-center gap-4 md:order-2 md:gap-5">
               <Link
                 href={`/u/${project.creator.github_username}`}
-                className="inline-flex w-fit items-center gap-2 rounded-full border border-border/60 bg-card/60 px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                className="inline-flex min-h-9 w-fit items-center gap-2 rounded-full border border-border/60 bg-card/60 px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
               >
                 <Avatar className="h-6 w-6">
                   {project.creator.avatar_url ? (
@@ -200,8 +202,8 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                 </span>
               </Link>
 
-              <div className="space-y-3">
-                <h1 className="text-3xl font-bold tracking-tight md:text-5xl">
+              <div className="space-y-2 md:space-y-3">
+                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl md:text-5xl">
                   {project.title}
                 </h1>
                 <p className="max-w-prose text-base text-muted-foreground md:text-lg">
@@ -250,8 +252,8 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                 ) : null}
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 pt-2">
-                <Button asChild size="lg" className="gap-2">
+              <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:flex-wrap sm:items-center">
+                <Button asChild size="lg" className="w-full gap-2 sm:w-auto">
                   <Link href={`/feed?focus=${project.id}`}>
                     <Sparkles className="h-4 w-4" />
                     Open in Stargaze
@@ -262,7 +264,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                     asChild
                     variant="outline"
                     size="lg"
-                    className="gap-2"
+                    className="w-full gap-2 sm:w-auto"
                   >
                     <a
                       href={project.github_repo_url}
@@ -275,7 +277,12 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                   </Button>
                 ) : null}
                 {project.cta_url ? (
-                  <Button asChild variant="ghost" size="lg" className="gap-2">
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="lg"
+                    className="w-full gap-2 sm:w-auto"
+                  >
                     <a
                       href={project.cta_url}
                       target="_blank"
@@ -309,8 +316,8 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
             aria-labelledby="readme-heading"
             className="border-t border-border/40"
           >
-            <div className="mx-auto w-full max-w-3xl px-4 pb-16 pt-12 md:pt-16">
-              <div className="mb-8 flex items-center gap-3">
+            <div className="mx-auto w-full max-w-3xl px-4 pb-12 pt-8 md:pb-16 md:pt-16">
+              <div className="mb-6 flex items-center gap-3 md:mb-8">
                 <p
                   id="readme-heading"
                   className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground/80"
@@ -368,7 +375,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         {/* ===================== More from this maker ===================== */}
         {makerProjects.length > 0 ? (
           <section className="border-t border-border/60 bg-background/40">
-            <div className="mx-auto w-full max-w-6xl px-4 py-12">
+            <div className="mx-auto w-full max-w-6xl px-4 py-8 md:py-12">
               <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-semibold tracking-tight md:text-2xl">
@@ -386,9 +393,14 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                   </Link>
                 </Button>
               </div>
-              <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 lg:grid-cols-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {makerProjects.map((p) => (
-                  <SiblingCard key={p.id} project={p} />
+                  <li
+                    key={p.id}
+                    className="w-[78%] shrink-0 snap-start sm:w-auto"
+                  >
+                    <SiblingCard project={p} />
+                  </li>
                 ))}
               </ul>
             </div>
@@ -398,7 +410,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         {/* ===================== Discover more ===================== */}
         {newestProjects.length > 0 ? (
           <section className="border-t border-border/60">
-            <div className="mx-auto w-full max-w-6xl px-4 py-12 pb-24">
+            <div className="mx-auto w-full max-w-6xl px-4 py-8 pb-24 md:py-12 md:pb-24">
               <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-semibold tracking-tight md:text-2xl">
@@ -432,42 +444,40 @@ function SiblingCard({ project }: { project: SiblingProject }) {
     .find((m) => m.type !== "video");
 
   return (
-    <li>
-      <Link
-        href={`/p/${project.slug}`}
-        className="group block focus-visible:outline-none"
-      >
-        <Card className="h-full overflow-hidden transition-all hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10 group-focus-visible:ring-2 group-focus-visible:ring-primary">
-          <div className="aspect-[16/10] overflow-hidden bg-muted">
-            {cover ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={cover.url}
-                alt=""
-                className="h-full w-full object-cover transition-transform group-hover:scale-[1.03]"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-muted-foreground/40">
-                <Star className="h-10 w-10" />
-              </div>
-            )}
-          </div>
-          <CardContent className="p-4">
-            <h3 className="line-clamp-1 font-semibold">{project.title}</h3>
-            <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-              {project.tagline}
-            </p>
-            <div className="mt-3 flex flex-wrap items-center gap-1.5">
-              {project.github_language ? (
-                <Badge variant="secondary">{project.github_language}</Badge>
-              ) : null}
-              {project.is_open_source ? (
-                <Badge variant="outline">OSS</Badge>
-              ) : null}
+    <Link
+      href={`/p/${project.slug}`}
+      className="group block focus-visible:outline-none"
+    >
+      <Card className="h-full overflow-hidden transition-all hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10 group-focus-visible:ring-2 group-focus-visible:ring-primary">
+        <div className="aspect-[16/10] overflow-hidden bg-muted">
+          {cover ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={cover.url}
+              alt=""
+              className="h-full w-full object-cover transition-transform group-hover:scale-[1.03]"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-muted-foreground/40">
+              <Star className="h-10 w-10" />
             </div>
-          </CardContent>
-        </Card>
-      </Link>
-    </li>
+          )}
+        </div>
+        <CardContent className="p-4">
+          <h3 className="line-clamp-1 font-semibold">{project.title}</h3>
+          <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+            {project.tagline}
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-1.5">
+            {project.github_language ? (
+              <Badge variant="secondary">{project.github_language}</Badge>
+            ) : null}
+            {project.is_open_source ? (
+              <Badge variant="outline">OSS</Badge>
+            ) : null}
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }

@@ -14,6 +14,7 @@ import { MagazineGrid } from "@/components/landing/magazine-grid";
 import { MakerStrip } from "@/components/landing/maker-strip";
 import { ObservatoryCta } from "@/components/landing/observatory-cta";
 import { SectionFrame } from "@/components/landing/section-frame";
+import { getCurrentUser } from "@/lib/auth/get-user";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -138,10 +139,11 @@ async function getStats() {
 /* ------------------------------------------------------------------------ */
 
 export default async function LandingPage() {
-  const [featured, leaders, stats] = await Promise.all([
+  const [featured, leaders, stats, currentUser] = await Promise.all([
     getFeatured(),
     getLeaders(),
     getStats(),
+    getCurrentUser(),
   ]);
 
   return (
@@ -150,7 +152,12 @@ export default async function LandingPage() {
       <LiveTicker />
       <main className="flex-1">
         <Hero featured={featured} stats={stats} />
-        <Bulletin stats={stats} featured={featured} leaders={leaders} />
+        <Bulletin
+          stats={stats}
+          featured={featured}
+          leaders={leaders}
+          currentUser={currentUser}
+        />
       </main>
       <ObservatoryCta />
       <Footer />
@@ -283,7 +290,28 @@ function Hero({
               }}
             />
             <div className="relative mx-auto w-full max-w-[320px] sm:max-w-[380px] md:mx-0 md:ml-auto md:max-w-[420px]">
-              <HeroDemo />
+              <HeroDemo
+                projects={featured.map((p) => ({
+                  id: p.id,
+                  slug: p.slug,
+                  title: p.title,
+                  tagline: p.tagline,
+                  github_language: p.github_language,
+                  github_stars: p.github_stars,
+                  is_open_source: p.is_open_source,
+                  user: p.user
+                    ? {
+                        github_username: p.user.github_username,
+                        avatar_url: p.user.avatar_url,
+                      }
+                    : null,
+                  cover_url:
+                    p.media
+                      ?.slice()
+                      .sort((a, b) => a.order_index - b.order_index)
+                      .find((m) => m.type === "screenshot")?.url ?? null,
+                }))}
+              />
             </div>
 
             {/* Hover-pause hint — desktop only; on mobile the looping demo
@@ -339,6 +367,7 @@ function Bulletin({
   stats,
   featured,
   leaders,
+  currentUser,
 }: {
   stats: {
     liveProjects: number;
@@ -348,6 +377,10 @@ function Bulletin({
   };
   featured: FeaturedProject[];
   leaders: LeaderRow[];
+  currentUser: {
+    github_username: string;
+    avatar_url: string | null;
+  } | null;
 }) {
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6">
@@ -439,10 +472,10 @@ function Bulletin({
       <section className="py-10 md:py-20">
         <SectionFrame
           index={6}
-          caption="For makers · distribution as a service"
+          caption="For makers · submit your project"
         />
         <div className="mt-6">
-          <MakerStrip />
+          <MakerStrip stats={stats} currentUser={currentUser} />
         </div>
       </section>
 

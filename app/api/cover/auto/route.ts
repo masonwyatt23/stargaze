@@ -61,9 +61,20 @@ export async function POST(req: Request) {
     host === "0.0.0.0" ||
     host.endsWith(".local") ||
     host.endsWith(".internal") ||
+    // IPv4 RFC1918 + link-local
     /^10\./.test(host) ||
     /^192\.168\./.test(host) ||
-    /^172\.(1[6-9]|2\d|3[01])\./.test(host);
+    /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+    /^169\.254\./.test(host) ||
+    // Decimal/octal/hex-encoded IPv4 (e.g. "2130706433" = 127.0.0.1) — block
+    // any pure-numeric host so encoding tricks can't bypass the dotted check
+    /^\d+$/.test(host) ||
+    /^0x[\da-f]+$/i.test(host) ||
+    // IPv6 — node's URL parser keeps brackets in `hostname`
+    host === "[::1]" ||
+    host === "[::]" ||
+    /^\[fe80:/i.test(host) || // link-local
+    /^\[f[cd][\da-f]{2}:/i.test(host); // ULA fc00::/7
   if (isPrivate) {
     return NextResponse.json(
       { error: "url must be publicly reachable" },

@@ -311,7 +311,22 @@ export function ProjectForm({ currentUser }: { currentUser: CurrentUser }) {
         return;
       }
 
-      const body = (await res.json()) as { slug: string };
+      const body = (await res.json()) as { slug: string; warning?: string };
+      if (body.warning === "go_live_failed") {
+        toast.warning("Saved as hidden.", {
+          description:
+            "Couldn't flip the listing live — open the dashboard to unhide.",
+        });
+        router.push(`/dashboard`);
+        return;
+      }
+      if (body.warning === "media_failed") {
+        toast.warning("Saved without media.", {
+          description: "Re-upload your cover from the dashboard.",
+        });
+        router.push(`/dashboard`);
+        return;
+      }
       toast.success("Live on the deck.", {
         description: "Sharing it boosts your placement.",
       });

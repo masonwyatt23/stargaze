@@ -161,6 +161,13 @@ export async function POST(req: Request) {
       project_id: created.id,
       error: liveErr.message,
     });
+    // Project + media are saved but the row is still hidden. Surface a
+    // warning so the client can prompt the owner to retry / unhide from
+    // the dashboard, instead of silently shipping a 201.
+    return NextResponse.json(
+      { slug: created.slug, warning: "go_live_failed" },
+      { status: 201 },
+    );
   }
 
   log({

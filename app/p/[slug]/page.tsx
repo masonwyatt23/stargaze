@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Footer } from "@/components/footer";
 import { MediaGallery } from "@/components/media-gallery";
 import { Nav } from "@/components/nav";
+import { EmbedBadge } from "@/components/embed-badge";
 import { ShareButtons } from "@/components/share-buttons";
 import { createClient } from "@/lib/supabase/server";
 import type {
@@ -302,6 +303,12 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                   size="sm"
                 />
               </div>
+
+              <EmbedBadge
+                slug={project.slug}
+                origin={baseUrl.replace(/\/$/, "")}
+                className="mt-3"
+              />
             </div>
           </div>
         </section>

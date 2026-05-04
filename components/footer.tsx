@@ -23,9 +23,15 @@ export function Footer() {
           <Link className="hover:text-foreground" href="/projects/new">
             Submit a project
           </Link>
+          <Link className="hover:text-foreground" href="/privacy">
+            Privacy
+          </Link>
+          <Link className="hover:text-foreground" href="/terms">
+            Terms
+          </Link>
           <a
             className="inline-flex items-center gap-1 hover:text-foreground"
-            href="https://github.com"
+            href="https://github.com/masonwyatt23/stargaze"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -35,9 +41,17 @@ export function Footer() {
         </nav>
       </div>
 
-      <div className="mx-auto mt-6 max-w-6xl text-[11px] text-muted-foreground/80">
-        Stargaze is a side project for indie makers. Stars are sent on your
-        behalf only when auto-star is enabled.
+      <div className="mx-auto mt-6 flex max-w-6xl items-baseline justify-between gap-4 text-[11px] text-muted-foreground/80">
+        <span>
+          Stargaze is a side project for indie makers. Stars are sent on your
+          behalf only when auto-star is enabled.
+        </span>
+        <a
+          href="mailto:support@ashlr.ai"
+          className="hidden shrink-0 hover:text-foreground md:inline"
+        >
+          support@ashlr.ai
+        </a>
       </div>
     </footer>
   );

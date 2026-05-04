@@ -15,6 +15,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { decryptToken } from "@/lib/crypto/token";
+import { maybeSendMilestoneEmail } from "@/lib/email/milestone";
 import { log } from "@/lib/log";
 import { parseGithubRepo } from "@/lib/utils";
 import {
@@ -184,6 +185,13 @@ export async function POST(request: Request): Promise<Response> {
         // githubStarred stays false; swipe response still succeeds.
       }
     }
+  }
+
+  // Milestone email — fire-but-await so it completes before the serverless
+  // function unfreezes. No-ops for left-swipes and for projects that haven't
+  // crossed a milestone count.
+  if (direction === "right") {
+    await maybeSendMilestoneEmail({ projectId });
   }
 
   return NextResponse.json(

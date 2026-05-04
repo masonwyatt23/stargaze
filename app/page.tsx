@@ -93,6 +93,58 @@ async function getLeaders(): Promise<LeaderRow[]> {
   }
 }
 
+/**
+ * Top 5 projects by right-swipes received in the last 7 days. Drives the
+ * landing's "Trending this week" rail — gives the page a recurring "what's
+ * hot right now" hook that changes every visit.
+ *
+ * Done in two queries (recent swipes → aggregate → fetch project rows) to
+ * keep things in PostgREST without a custom RPC.
+ */
+async function getTrending(): Promise<FeaturedProject[]> {
+  try {
+    const supabase = await createClient();
+    const since = new Date(
+      Date.now() - 7 * 24 * 3600 * 1000,
+    ).toISOString();
+    const { data: swipes } = await supabase
+      .from("swipes")
+      .select("project_id")
+      .eq("direction", "right")
+      .gte("created_at", since);
+    if (!swipes || swipes.length === 0) return [];
+
+    const counts = new Map<string, number>();
+    for (const s of swipes as Array<{ project_id: string }>) {
+      counts.set(s.project_id, (counts.get(s.project_id) ?? 0) + 1);
+    }
+    const topIds = Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([id]) => id);
+    if (topIds.length === 0) return [];
+
+    const { data: projects } = await supabase
+      .from("projects")
+      .select(
+        `id, slug, title, tagline, github_language, github_stars,
+         is_open_source, created_at, category,
+         user:users!projects_user_id_fkey(github_username, display_name, avatar_url),
+         media:project_media(url, type, order_index)`,
+      )
+      .in("id", topIds)
+      .eq("status", "live");
+    const rows = (projects ?? []) as unknown as FeaturedProject[];
+    // Re-order to match topIds (the query above doesn't preserve order).
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    return topIds
+      .map((id) => byId.get(id))
+      .filter((p): p is FeaturedProject => Boolean(p));
+  } catch {
+    return [];
+  }
+}
+
 async function getStats() {
   try {
     const supabase = await createClient();
@@ -139,8 +191,9 @@ async function getStats() {
 /* ------------------------------------------------------------------------ */
 
 export default async function LandingPage() {
-  const [featured, leaders, stats, currentUser] = await Promise.all([
+  const [featured, trending, leaders, stats, currentUser] = await Promise.all([
     getFeatured(),
+    getTrending(),
     getLeaders(),
     getStats(),
     getCurrentUser(),
@@ -155,6 +208,7 @@ export default async function LandingPage() {
         <Bulletin
           stats={stats}
           featured={featured}
+          trending={trending}
           leaders={leaders}
           currentUser={currentUser}
         />
@@ -366,6 +420,7 @@ function Sep() {
 function Bulletin({
   stats,
   featured,
+  trending,
   leaders,
   currentUser,
 }: {
@@ -376,6 +431,7 @@ function Bulletin({
     starsThisWeek: number;
   };
   featured: FeaturedProject[];
+  trending: FeaturedProject[];
   leaders: LeaderRow[];
   currentUser: {
     github_username: string;
@@ -451,9 +507,33 @@ function Bulletin({
         <MagazineGrid projects={featured} />
       </section>
 
+      {trending.length > 0 ? (
+        <section className="py-10 md:py-20">
+          <SectionFrame
+            index={5}
+            caption="Trending this week · last 7 days of right-swipes"
+            meta={`${trending.length} hot${trending.length === 1 ? "" : "s"}`}
+          />
+          <div className="mb-10 mt-4 flex flex-wrap items-baseline justify-between gap-4">
+            <h2 className="editorial-display text-4xl text-foreground md:text-6xl">
+              What&apos;s hot{" "}
+              <span className="text-primary">right now.</span>
+            </h2>
+            <Link
+              href="/feed?sort=trending"
+              className="group inline-flex items-center gap-1 text-sm text-primary hover:underline"
+            >
+              See more on the deck
+              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          </div>
+          <FeaturedRail projects={trending} />
+        </section>
+      ) : null}
+
       <section className="py-10 md:py-20">
         <SectionFrame
-          index={5}
+          index={trending.length > 0 ? 6 : 5}
           caption="This week's constellation · leaderboard"
           meta="resets monday 00:00 UTC"
         />

@@ -51,15 +51,40 @@ export default async function SavesPage() {
 
 function EmptySaves() {
   return (
-    <Card className="border-dashed bg-card/40">
-      <CardContent className="flex flex-col items-center gap-3 p-12 text-center">
-        <Star className="h-8 w-8 fill-primary/50 text-primary" />
-        <p className="text-sm text-muted-foreground">
-          No saves yet. Head to the deck and start starring.
-        </p>
-        <Button asChild className="mt-2">
-          <Link href="/feed">Open the deck</Link>
-        </Button>
+    <Card className="relative overflow-hidden border-dashed bg-card/40">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10 opacity-50"
+        style={{
+          background:
+            "radial-gradient(circle at center, hsl(47 96% 58% / 0.18) 0%, transparent 70%)",
+        }}
+      />
+      <CardContent className="flex flex-col items-center gap-4 p-12 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/15 ring-1 ring-primary/30">
+          <Star
+            className="h-7 w-7 fill-primary text-primary"
+            strokeWidth={0}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <h2 className="text-lg font-semibold tracking-tight">
+            Your saves will live here.
+          </h2>
+          <p className="max-w-sm text-sm text-muted-foreground">
+            Right-swipe a project on the deck to save it — and (with auto-star
+            on) star it on GitHub at the same time. Long-press any saved card
+            to undo both.
+          </p>
+        </div>
+        <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+          <Button asChild>
+            <Link href="/feed">Open the deck</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/leaderboard">See who&apos;s leading</Link>
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

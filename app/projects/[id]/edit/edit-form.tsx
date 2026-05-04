@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { useAutoCover } from "@/lib/hooks/use-auto-cover";
 import { cn } from "@/lib/utils";
 import {
   deleteProject,
@@ -89,52 +90,11 @@ export function EditForm({
     set("screenshots", next);
   };
 
-  const [autoGenBusy, setAutoGenBusy] = React.useState<null | "live" | "github">(
-    null,
-  );
-
-  const runAutoGen = async (source: "live" | "github") => {
-    const url =
-      source === "github"
-        ? form.github_repo_url.trim()
-        : form.cta_url.trim() || form.github_repo_url.trim();
-    if (!url) {
-      toast.error(
-        source === "github"
-          ? "Add a GitHub repo URL first."
-          : "Add a live URL or GitHub repo URL first.",
-      );
-      return;
-    }
-    setAutoGenBusy(source);
-    try {
-      const res = await fetch("/api/cover/auto", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ url, source }),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        toast.error("Couldn't generate a cover.", {
-          description: body?.error ?? `HTTP ${res.status}`,
-        });
-        return;
-      }
-      const body = (await res.json()) as { url: string };
-      set("screenshots", [...form.screenshots, body.url]);
-      toast.success(
-        source === "github"
-          ? "Pulled the GitHub social preview."
-          : "Generated a live screenshot.",
-      );
-    } catch (err) {
-      toast.error("Network error.", {
-        description: err instanceof Error ? err.message : undefined,
-      });
-    } finally {
-      setAutoGenBusy(null);
-    }
-  };
+  const { busy: autoGenBusy, run: runAutoGen } = useAutoCover({
+    liveUrl: form.cta_url,
+    githubUrl: form.github_repo_url,
+    onResolved: (url) => set("screenshots", [...form.screenshots, url]),
+  });
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();

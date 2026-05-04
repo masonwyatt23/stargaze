@@ -37,6 +37,40 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "invalid body" }, { status: 400 });
   }
 
+  // URL hygiene — block obviously-internal targets so this endpoint can't be
+  // used as a reconnaissance probe even if Microlink's own SSRF guards lapse.
+  // The Microlink URL itself is returned to the client (rather than proxied),
+  // which means it remains a publicly-callable screenshot URL forever — that's
+  // intentional for cost reasons but documented as a known limitation.
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(body.url);
+  } catch {
+    return NextResponse.json({ error: "malformed url" }, { status: 400 });
+  }
+  if (parsedUrl.protocol !== "https:") {
+    return NextResponse.json(
+      { error: "url must be https" },
+      { status: 400 },
+    );
+  }
+  const host = parsedUrl.hostname.toLowerCase();
+  const isPrivate =
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host === "0.0.0.0" ||
+    host.endsWith(".local") ||
+    host.endsWith(".internal") ||
+    /^10\./.test(host) ||
+    /^192\.168\./.test(host) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(host);
+  if (isPrivate) {
+    return NextResponse.json(
+      { error: "url must be publicly reachable" },
+      { status: 400 },
+    );
+  }
+
   if (body.source === "github") {
     const parsed = parseGithubRepo(body.url);
     if (!parsed) {

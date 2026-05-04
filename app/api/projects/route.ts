@@ -73,6 +73,9 @@ export async function POST(req: Request) {
 
   const admin = createServiceClient();
 
+  // Insert as `hidden` first so the project never appears in the deck
+  // between the project row insert and the media insert (the deck would
+  // otherwise serve a cover-less card during that window).
   const { data: created, error: insertErr } = await admin
     .from("projects")
     .insert({
@@ -86,7 +89,7 @@ export async function POST(req: Request) {
       cta_url: parsed.cta_url ?? parsed.github_repo_url,
       is_open_source: parsed.is_open_source,
       category: parsed.category,
-      status: "live",
+      status: "hidden",
     })
     .select("id, slug")
     .single();
@@ -137,12 +140,27 @@ export async function POST(req: Request) {
       project_id: created.id,
       error: mediaErr.message,
     });
-    // Project row is live without media — return success but include the
-    // warning so the client can prompt a re-upload from the edit screen.
+    // Leave the project hidden so a cover-less card never enters the deck.
+    // Owner can re-upload from the edit screen and flip status manually.
     return NextResponse.json(
       { slug: created.slug, warning: "media_failed" },
       { status: 201 },
     );
+  }
+
+  // All media committed — flip to live.
+  const { error: liveErr } = await admin
+    .from("projects")
+    .update({ status: "live" })
+    .eq("id", created.id);
+  if (liveErr) {
+    log({
+      level: "warn",
+      event: "projects.create.go_live_failed",
+      user_id: user.id,
+      project_id: created.id,
+      error: liveErr.message,
+    });
   }
 
   log({

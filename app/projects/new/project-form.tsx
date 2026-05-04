@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { useAutoCover } from "@/lib/hooks/use-auto-cover";
 import { createClient } from "@/lib/supabase/client";
 import { parseGithubRepo } from "@/lib/utils";
 
@@ -259,53 +260,11 @@ export function ProjectForm({ currentUser }: { currentUser: CurrentUser }) {
     ]);
   }, []);
 
-  const [autoGenBusy, setAutoGenBusy] = useState<null | "live" | "github">(null);
-
-  const runAutoGen = useCallback(
-    async (source: "live" | "github") => {
-      const url =
-        source === "github"
-          ? values.github_repo_url?.trim()
-          : (values.cta_url?.trim() || values.github_repo_url?.trim() || "");
-      if (!url) {
-        toast.error(
-          source === "github"
-            ? "Add a GitHub repo URL first."
-            : "Add a live URL or GitHub repo URL first.",
-        );
-        return;
-      }
-      setAutoGenBusy(source);
-      try {
-        const res = await fetch("/api/cover/auto", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ url, source }),
-        });
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          toast.error("Couldn't generate a cover.", {
-            description: body?.error ?? `HTTP ${res.status}`,
-          });
-          return;
-        }
-        const body = (await res.json()) as { url: string };
-        addExternalCover(body.url);
-        toast.success(
-          source === "github"
-            ? "Pulled the GitHub social preview."
-            : "Generated a live screenshot.",
-        );
-      } catch (err) {
-        toast.error("Network error.", {
-          description: err instanceof Error ? err.message : undefined,
-        });
-      } finally {
-        setAutoGenBusy(null);
-      }
-    },
-    [values.github_repo_url, values.cta_url, addExternalCover],
-  );
+  const { busy: autoGenBusy, run: runAutoGen } = useAutoCover({
+    liveUrl: values.cta_url,
+    githubUrl: values.github_repo_url,
+    onResolved: addExternalCover,
+  });
 
   /* ---------------- Submit ---------------- */
   const onSubmit = handleSubmit(async (data) => {

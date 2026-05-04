@@ -4,8 +4,8 @@
  * Body: { projectId: string (uuid), email: string, message?: string }
  *
  * Inserts an `access_requests` row and pings the project creator via
- * Resend. In dev (when RESEND_API_KEY is unset), we just log the email
- * payload and return 200 — the row is still inserted.
+ * SendGrid. In dev (when SENDGRID_API_KEY is unset), we log the payload
+ * and return 200 — the row is still inserted.
  */
 
 import { NextResponse } from "next/server";
@@ -13,6 +13,7 @@ import { z } from "zod";
 
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/get-user";
+import { sendEmail } from "@/lib/email/send";
 import { log } from "@/lib/log";
 
 export const runtime = "nodejs";
@@ -139,10 +140,6 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   // ---- Send the email ----
-  const apiKey = process.env.RESEND_API_KEY;
-  const fromAddr =
-    process.env.RESEND_FROM_EMAIL ?? "Stargaze <noreply@stargaze.ashlr.ai>";
-
   const requesterName =
     user.display_name?.trim() || user.github_username || "A Stargaze user";
   const safeMessage = (message ?? "").trim();
@@ -169,18 +166,7 @@ export async function POST(request: Request): Promise<Response> {
     </div>
   `.trim();
 
-  if (!apiKey) {
-    log({
-      level: "info",
-      event: "access_request.email.skipped_no_api_key",
-      projectId,
-      to: creatorEmail ?? `<no-creator-email user=${creator?.github_username ?? project.user_id}>`,
-      from: fromAddr,
-      subject,
-      replyTo: email,
-      hasMessage: safeMessage.length > 0,
-    });
-  } else if (!creatorEmail) {
+  if (!creatorEmail) {
     log({
       level: "warn",
       event: "access_request.email.no_creator_email",
@@ -188,44 +174,14 @@ export async function POST(request: Request): Promise<Response> {
       creatorUserId: project.user_id,
     });
   } else {
-    try {
-      const resendController = new AbortController();
-      const resendTimer = setTimeout(() => resendController.abort(), 8_000);
-      const r = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: fromAddr,
-          to: creatorEmail,
-          reply_to: email,
-          subject,
-          html,
-        }),
-        signal: resendController.signal,
-      });
-      clearTimeout(resendTimer);
-      if (!r.ok) {
-        const errText = await r.text().catch(() => r.statusText);
-        log({
-          level: "error",
-          event: "access_request.email.resend_non_2xx",
-          projectId,
-          status: r.status,
-          body: errText,
-        });
-      }
-    } catch (err) {
-      log({
-        level: "error",
-        event: "access_request.email.resend_failed",
-        projectId,
-        error: err instanceof Error ? err.message : String(err),
-      });
-      // Still return 200 — the row is what matters; email is best-effort.
-    }
+    // Email is best-effort — the access_requests row is the source of truth.
+    await sendEmail({
+      to: creatorEmail,
+      subject,
+      html,
+      replyTo: email,
+      context: { projectId, scope: "access_request" },
+    });
   }
 
   return NextResponse.json(

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { sendEmail } from "@/lib/email/send";
 import { log } from "@/lib/log";
 import { createServiceClient } from "@/lib/supabase/server";
 
@@ -41,15 +42,12 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
+  if (!process.env.SENDGRID_API_KEY) {
     return NextResponse.json(
-      { error: "RESEND_API_KEY not configured" },
+      { error: "SENDGRID_API_KEY not configured" },
       { status: 500 },
     );
   }
-  const fromAddr =
-    process.env.RESEND_FROM_EMAIL ?? "Stargaze <noreply@stargaze.ashlr.ai>";
 
   const admin = createServiceClient();
 
@@ -141,25 +139,23 @@ export async function GET(req: Request) {
         top,
       });
 
-      const r = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: fromAddr,
-          to: email,
-          subject,
-          html,
-        }),
+      const result = await sendEmail({
+        to: email,
+        subject,
+        html,
+        context: { user_id: maker.id, scope: "weekly_digest" },
       });
-
-      if (r.ok) {
+      if (result.ok) {
         results.push({ user_id: maker.id, status: "sent" });
       } else {
-        const errText = await r.text().catch(() => r.statusText);
-        results.push({ user_id: maker.id, status: "failed", reason: errText.slice(0, 200) });
+        results.push({
+          user_id: maker.id,
+          status: "failed",
+          reason:
+            result.reason === "non_2xx"
+              ? `${result.status}: ${(result.message ?? "").slice(0, 200)}`
+              : result.reason,
+        });
       }
     } catch (err) {
       results.push({

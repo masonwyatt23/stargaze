@@ -54,7 +54,66 @@ type FeedPageProps = {
  *   - `?oss=`  → true | false (open-source filter)
  *   - `?lang=` → github_language exact match (case-insensitive)
  */
-export default async function FeedPage({ searchParams }: FeedPageProps) {
+export default async function FeedPage(props: FeedPageProps) {
+  // Top-level guard so a runtime crash in the render tree doesn't take the
+  // whole route down. We log the digest + stack to Vercel and render a
+  // recoverable empty state with the message inline (visible on prod too).
+  try {
+    return await renderFeedPage(props);
+  } catch (err) {
+    log({
+      level: "error",
+      event: "feed.page.crashed",
+      error: (err as Error).message,
+      stack: (err as Error).stack?.slice(0, 2000),
+    });
+    return <FeedCrashFallback message={(err as Error).message ?? "unknown"} />;
+  }
+}
+
+function FeedCrashFallback({ message }: { message: string }) {
+  return (
+    <>
+      <Nav />
+      <main className="flex-1">
+        <div className="mx-auto max-w-2xl px-4 py-16">
+          <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-8 text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+              <span className="text-2xl">⚠</span>
+            </div>
+            <h2 className="text-xl font-semibold">Feed hit a snag</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              We logged it. Try a refresh, or check out{" "}
+              <Link href="/launches" className="text-primary underline">
+                the launch wall
+              </Link>{" "}
+              while we sort it out.
+            </p>
+            <details className="mt-4 text-left">
+              <summary className="cursor-pointer font-mono text-xs text-muted-foreground/70">
+                technical details
+              </summary>
+              <pre className="mt-2 overflow-x-auto rounded bg-card/60 p-3 text-[11px] text-muted-foreground">
+                {message}
+              </pre>
+            </details>
+            <div className="mt-6">
+              <Link
+                href="/api/random"
+                className="inline-flex h-10 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground"
+              >
+                Take me to a random project →
+              </Link>
+            </div>
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </>
+  );
+}
+
+async function renderFeedPage({ searchParams }: FeedPageProps) {
   const user = await getCurrentUser();
   if (!user) {
     redirect("/sign-in?redirect=/feed");

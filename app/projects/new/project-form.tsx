@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
+  Globe,
   ImagePlus,
   Loader2,
   Sparkles,
@@ -241,11 +242,84 @@ export function ProjectForm({ currentUser }: { currentUser: CurrentUser }) {
     });
   }, []);
 
+  /** Append an externally-hosted cover image (microlink, opengraph) directly,
+   *  bypassing the Storage upload path since the URL is already public. */
+  const addExternalCover = useCallback((url: string) => {
+    const id = `ext-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    setShots((prev) => [
+      ...prev,
+      {
+        id,
+        // Synthetic File so the type stays consistent — we never upload it.
+        file: new File([], "external"),
+        previewUrl: url,
+        uploadedUrl: url,
+        uploading: false,
+      },
+    ]);
+  }, []);
+
+  const [autoGenBusy, setAutoGenBusy] = useState<null | "live" | "github">(null);
+
+  const runAutoGen = useCallback(
+    async (source: "live" | "github") => {
+      const url =
+        source === "github"
+          ? values.github_repo_url?.trim()
+          : (values.cta_url?.trim() || values.github_repo_url?.trim() || "");
+      if (!url) {
+        toast.error(
+          source === "github"
+            ? "Add a GitHub repo URL first."
+            : "Add a live URL or GitHub repo URL first.",
+        );
+        return;
+      }
+      setAutoGenBusy(source);
+      try {
+        const res = await fetch("/api/cover/auto", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ url, source }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          toast.error("Couldn't generate a cover.", {
+            description: body?.error ?? `HTTP ${res.status}`,
+          });
+          return;
+        }
+        const body = (await res.json()) as { url: string };
+        addExternalCover(body.url);
+        toast.success(
+          source === "github"
+            ? "Pulled the GitHub social preview."
+            : "Generated a live screenshot.",
+        );
+      } catch (err) {
+        toast.error("Network error.", {
+          description: err instanceof Error ? err.message : undefined,
+        });
+      } finally {
+        setAutoGenBusy(null);
+      }
+    },
+    [values.github_repo_url, values.cta_url, addExternalCover],
+  );
+
   /* ---------------- Submit ---------------- */
   const onSubmit = handleSubmit(async (data) => {
     const stillUploading = shots.some((s) => s.uploading);
     if (stillUploading) {
       toast.error("Wait for screenshots to finish uploading.");
+      return;
+    }
+    const usable = shots.filter((s) => s.uploadedUrl && !s.error);
+    if (usable.length === 0) {
+      toast.error("Add at least one cover image.", {
+        description:
+          "Upload a screenshot, paste your live URL to auto-generate one, or use the GitHub social preview.",
+      });
       return;
     }
 
@@ -424,7 +498,46 @@ export function ProjectForm({ currentUser }: { currentUser: CurrentUser }) {
         </FieldRow>
 
         <FieldRow>
-          <Label>Screenshots</Label>
+          <div className="flex items-baseline justify-between gap-2">
+            <Label>
+              Cover image <span className="text-destructive">*</span>
+            </Label>
+            <span className="text-[11px] text-muted-foreground">
+              Required — first one is your card&apos;s cover.
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={autoGenBusy !== null}
+              onClick={() => runAutoGen("live")}
+              className="gap-1.5"
+            >
+              {autoGenBusy === "live" ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Globe className="h-3.5 w-3.5" />
+              )}
+              Auto-generate from live URL
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={autoGenBusy !== null}
+              onClick={() => runAutoGen("github")}
+              className="gap-1.5"
+            >
+              {autoGenBusy === "github" ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <GithubIcon className="h-3.5 w-3.5" />
+              )}
+              Use GitHub social preview
+            </Button>
+          </div>
           <input
             ref={fileInputRef}
             type="file"

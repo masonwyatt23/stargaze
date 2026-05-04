@@ -24,7 +24,10 @@ const UpdateInput = z.object({
     .enum(["ai-tool", "dev-utility", "game", "saas", "other"])
     .nullable(),
   demo_video_url: z.string().url().max(500).nullable(),
-  screenshots: z.array(z.string().url().max(500)).max(20),
+  screenshots: z
+    .array(z.string().url().max(500))
+    .min(1, "At least one cover image is required.")
+    .max(20),
 });
 
 export type UpdateProjectInput = z.infer<typeof UpdateInput>;

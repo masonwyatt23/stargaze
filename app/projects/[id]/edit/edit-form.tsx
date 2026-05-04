@@ -2,7 +2,15 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowUp, ImagePlus, Loader2, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Globe,
+  ImagePlus,
+  Loader2,
+  Trash2,
+} from "lucide-react";
+import { GithubIcon } from "@/components/icons/github-icon";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -81,13 +89,66 @@ export function EditForm({
     set("screenshots", next);
   };
 
+  const [autoGenBusy, setAutoGenBusy] = React.useState<null | "live" | "github">(
+    null,
+  );
+
+  const runAutoGen = async (source: "live" | "github") => {
+    const url =
+      source === "github"
+        ? form.github_repo_url.trim()
+        : form.cta_url.trim() || form.github_repo_url.trim();
+    if (!url) {
+      toast.error(
+        source === "github"
+          ? "Add a GitHub repo URL first."
+          : "Add a live URL or GitHub repo URL first.",
+      );
+      return;
+    }
+    setAutoGenBusy(source);
+    try {
+      const res = await fetch("/api/cover/auto", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ url, source }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        toast.error("Couldn't generate a cover.", {
+          description: body?.error ?? `HTTP ${res.status}`,
+        });
+        return;
+      }
+      const body = (await res.json()) as { url: string };
+      set("screenshots", [...form.screenshots, body.url]);
+      toast.success(
+        source === "github"
+          ? "Pulled the GitHub social preview."
+          : "Generated a live screenshot.",
+      );
+    } catch (err) {
+      toast.error("Network error.", {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setAutoGenBusy(null);
+    }
+  };
+
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanedShots = form.screenshots
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+    if (cleanedShots.length === 0) {
+      toast.error("Add at least one cover image.", {
+        description:
+          "Paste an image URL, generate one from your live URL, or use the GitHub social preview.",
+      });
+      return;
+    }
     startTransition(async () => {
-      const cleanedShots = form.screenshots
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0);
-
       const res = await updateProject({
         projectId,
         title: form.title.trim(),
@@ -251,8 +312,11 @@ export function EditForm({
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label>Screenshots ({form.screenshots.length})</Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label>
+                Cover image ({form.screenshots.length}){" "}
+                <span className="text-destructive">*</span>
+              </Label>
               <Button
                 type="button"
                 size="sm"
@@ -266,9 +330,44 @@ export function EditForm({
               </Button>
             </div>
 
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={autoGenBusy !== null}
+                onClick={() => runAutoGen("live")}
+                className="gap-1.5"
+              >
+                {autoGenBusy === "live" ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Globe className="h-3.5 w-3.5" />
+                )}
+                Auto-generate from live URL
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={autoGenBusy !== null}
+                onClick={() => runAutoGen("github")}
+                className="gap-1.5"
+              >
+                {autoGenBusy === "github" ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <GithubIcon className="h-3.5 w-3.5" />
+                )}
+                Use GitHub social preview
+              </Button>
+            </div>
+
             {form.screenshots.length === 0 ? (
-              <p className="rounded-md border border-dashed border-border/60 p-6 text-center text-xs text-muted-foreground">
-                No screenshots yet. Add a public image URL above.
+              <p className="rounded-md border border-dashed border-destructive/40 bg-destructive/5 p-6 text-center text-xs text-muted-foreground">
+                A cover image is required. Add one above — paste an image URL,
+                generate from your live site, or pull GitHub&apos;s social
+                preview.
               </p>
             ) : (
               <ul className="space-y-2">
